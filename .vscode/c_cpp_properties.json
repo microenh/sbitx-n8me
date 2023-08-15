@@ -1,0 +1,19 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/include/**",
+                "/usr/lib/arm-linux-gnueabihf/glib-2.0/include/**",
+                "/Volumes/usr/include/**",
+                "/Volumes/usr/lib/arm-linux-gnueabihf/glib-2.0/include/**"
+            ],
+            "defines": ["N8ME"],
+            "cStandard": "c17",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "linux-gcc-arm"
+        }
+    ],
+    "version": 4
+}

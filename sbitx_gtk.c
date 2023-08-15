@@ -3599,30 +3599,40 @@ void ui_init(int argc, char *argv[]){
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#ifdef N8ME
+	screen_width = 800;
+	screen_height = 400;
+#else
 	screen_width = gdk_screen_width();
 	screen_height = gdk_screen_height();
+#endif
 #pragma pop
 
 	q_init(&q_web, 1000);
 
   window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  //gtk_window_set_default_size(GTK_WINDOW(window), 800, 480);
+  // gtk_window_set_default_size(GTK_WINDOW(window), 800, 480);
   gtk_window_set_default_size(GTK_WINDOW(window), screen_width, screen_height);
-  gtk_window_set_title( GTK_WINDOW(window), "sBITX" );
+  #ifdef N8ME
+    gtk_window_move(GTK_WINDOW(window), 0, 0);
+    gtk_window_set_title(GTK_WINDOW(window), "sBITX-N8ME" );
+  #else
+    gtk_window_set_title(GTK_WINDOW(window), "sBITX" );
+  #endif
 	gtk_window_set_icon_from_file(GTK_WINDOW(window), "/home/pi/sbitx/sbitx_icon.png", NULL);
 
   display_area = gtk_drawing_area_new();
   gtk_container_add( GTK_CONTAINER(window), display_area );
 
-  g_signal_connect( G_OBJECT(window), "destroy", G_CALLBACK( gtk_main_quit ), NULL );
-  g_signal_connect( G_OBJECT(display_area), "draw", G_CALLBACK( on_draw_event ), NULL );
-  g_signal_connect (G_OBJECT (window), "key_press_event", G_CALLBACK (on_key_press), NULL);
-  g_signal_connect (G_OBJECT (window), "key_release_event", G_CALLBACK (on_key_release), NULL);
-  g_signal_connect (G_OBJECT (window), "window_state_event", G_CALLBACK (on_window_state), NULL);
-	g_signal_connect (G_OBJECT(display_area), "button_press_event", G_CALLBACK (on_mouse_press), NULL);
-	g_signal_connect (G_OBJECT(window), "button_release_event", G_CALLBACK (on_mouse_release), NULL);
-	g_signal_connect (G_OBJECT(display_area), "motion_notify_event", G_CALLBACK (on_mouse_move), NULL);
-	g_signal_connect (G_OBJECT(display_area), "scroll_event", G_CALLBACK (on_scroll), NULL);
+  g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
+  g_signal_connect(G_OBJECT(display_area), "draw", G_CALLBACK(on_draw_event), NULL);
+  g_signal_connect(G_OBJECT(window), "key_press_event", G_CALLBACK(on_key_press), NULL);
+  g_signal_connect(G_OBJECT(window), "key_release_event", G_CALLBACK(on_key_release), NULL);
+  g_signal_connect(G_OBJECT(window), "window_state_event", G_CALLBACK(on_window_state), NULL);
+	g_signal_connect(G_OBJECT(display_area), "button_press_event", G_CALLBACK(on_mouse_press), NULL);
+	g_signal_connect(G_OBJECT(window), "button_release_event", G_CALLBACK(on_mouse_release), NULL);
+	g_signal_connect(G_OBJECT(display_area), "motion_notify_event", G_CALLBACK(on_mouse_move), NULL);
+	g_signal_connect(G_OBJECT(display_area), "scroll_event", G_CALLBACK(on_scroll), NULL);
 	g_signal_connect(G_OBJECT(window), "configure_event", G_CALLBACK(on_resize), NULL);
 
   /* Ask to receive events the drawing area doesn't normally
@@ -3630,16 +3640,21 @@ void ui_init(int argc, char *argv[]){
    * button press and motion notify events that want to handle.
    */
   gtk_widget_set_events (display_area, gtk_widget_get_events (display_area)
-                                     | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK 
-																			| GDK_SCROLL_MASK
-                                     | GDK_POINTER_MOTION_MASK);
+    | GDK_BUTTON_PRESS_MASK
+    | GDK_BUTTON_RELEASE_MASK 
+    | GDK_SCROLL_MASK
+    | GDK_POINTER_MOTION_MASK);
 
 	//scale the fonts as needed, these need to be done just once
 	for (int i = 0; i < sizeof(font_table)/sizeof(struct font_style); i++)
 		font_table[i].height = (font_table[i].height * screen_height)/480;
 	scale_ui();	
   gtk_widget_show_all(window);
-	gtk_window_fullscreen(GTK_WINDOW(window));
+  #ifdef N8ME
+    gtk_window_get_default_widget(GTK_WINDOW(window));
+  #else
+	  gtk_window_fullscreen(GTK_WINDOW(window));
+  #endif
 	focus_field(get_field("r1:volume"));
 	webserver_start();
 }
@@ -4400,11 +4415,15 @@ int main( int argc, char* argv[] ) {
   hamlib_start();
 	remote_start();
 
+  #ifndef N8ME
 	printf("Reading rtc...");
 	rtc_read();
 	printf("done!\n");
+  #endif
 
+  #ifndef N8ME
 	open_url("http://127.0.0.1:8080");
+  #endif
 //	execute_app("chromium-browser --log-leve=3 "
 //	"--enable-features=OverlayScrollbar http://127.0.0.1:8080"
 //	"  &>/dev/null &");
