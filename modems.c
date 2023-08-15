@@ -897,10 +897,11 @@ void modem_init(){
 	strcpy(fldigi_mode, "");
 
 	//for now, launch fldigi in the background, if not already running
-	int e = system("pidof -x fldigi > /dev/null");
-	if (e == 256)
-		system("fldigi -i &");
-
+  #ifndef N8ME
+	  int e = system("pidof -x fldigi > /dev/null");
+	  if (e == 256)
+		  system("fldigi -i &");
+  #endif
 }
 
 
