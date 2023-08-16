@@ -3028,6 +3028,9 @@ uint8_t bcd2dec(uint8_t val){
 
 void rtc_read(){
 	uint8_t rtc_time[10];
+	#ifdef N8ME
+	int timezone, daylight;
+	#endif
 
 	i2cbb_write_i2c_block_data(DS3231_I2C_ADD, 0, 0, NULL);
 
@@ -3495,10 +3498,11 @@ gboolean ui_tick(gpointer gook){
     //write_console(FONT_LOG, message);
 	}
 
-
+	#ifndef N8ME
 	if (ticks % 20 == 0){
   	modem_poll(mode_id(get_field("r1:mode")->value));
 	}
+	#endif
 
 	if (ticks == 100){
 
@@ -3771,6 +3775,9 @@ void utc_set(char *args, int update_rtc){
 	char *p, *q;
 	struct tm t;
 	time_t gm_now;
+	#ifdef N8ME
+	int timezone, daylight;
+	#endif
 
 	i = 0;
 	p =  strtok(args, "-/;: ");

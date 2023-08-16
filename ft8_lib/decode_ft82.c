@@ -277,10 +277,12 @@ int main(int argc, char** argv)
 		fread(signal, num_samples, sizeof(int16_t), pf);
 		fclose(pf);
 
+    #ifndef N8ME
     if (rc < 0)
     {
         return -1;
     }
+    #endif
 
     LOG(LOG_INFO, "Sample rate %d Hz, %d samples, %.3f seconds\n", sample_rate, num_samples, (double)num_samples / sample_rate);
 

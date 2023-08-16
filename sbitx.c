@@ -673,8 +673,10 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 		mute_count--;
 	}
 
-	//push the data to any potential modem 
+	//push the data to any potential modem
+	#ifndef N8ME 
 	modem_rx(rx_list->mode, output_speaker, MAX_BINS/2);
+	#endif
 }
 
 void read_power(){
