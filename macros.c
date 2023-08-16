@@ -45,7 +45,7 @@ void macro_list(char *output){
   struct dirent *dir;
 
 	if (!d){
-		write_console(FONT_LOG, "\Error:data subdirectory is missing\n");
+		write_console(FONT_LOG, "\nError:data subdirectory is missing\n");
 		return;
 	}
 

@@ -3003,6 +3003,8 @@ void redraw(){
 
 /* hardware specific routines */
 
+#ifndef N8ME
+// [mee] now done outside program (setGPIO.py)
 void init_gpio_pins(){
 	for (int i = 0; i < 15; i++){
 		pinMode(pins[i], INPUT);
@@ -3014,6 +3016,7 @@ void init_gpio_pins(){
 	pinMode(DASH, INPUT);
 	pullUpDnControl(DASH, PUD_UP);
 }
+#endif
 
 uint8_t dec2bcd(uint8_t val){
 	return ((val/10 * 16) + (val %10));
@@ -3218,7 +3221,9 @@ void query_swr(){
 
 void hw_init(){
 	wiringPiSetup();
+  #ifndef N8ME
 	init_gpio_pins();
+  #endif
 
 	enc_init(&enc_a, ENC_FAST, ENC1_B, ENC1_A);
 	enc_init(&enc_b, ENC_FAST, ENC2_A, ENC2_B);
