@@ -32,6 +32,7 @@ The initial sync between the gui values, the core radio values, settings, et al 
 #include <errno.h>
 #include <wiringPi.h>
 #include <wiringSerial.h>
+
 #include "sdr.h"
 #include "sound.h"
 #include "sdr_ui.h"
@@ -51,76 +52,82 @@ struct Queue q_tx_text;
 
 /* Front Panel controls */
 char pins[15] = {0, 2, 3, 6, 7, 
-								10, 11, 12, 13, 14, 
-								21, 22, 23, 25, 27};
+				10, 11, 12, 13, 14, 
+				21, 22, 23, 25, 27};
 
-#define ENC1_A (13)
-#define ENC1_B (12)
+#define ENC1_A  (13)
+#define ENC1_B  (12)
 #define ENC1_SW (14)
 
-#define ENC2_A (0)
-#define ENC2_B (2)
+#define ENC2_A  (0)
+#define ENC2_B  (2)
 #define ENC2_SW (3)
 
-#define SW5 (22)
-#define PTT (7)
+#define SW5  (22)
+#define PTT  (7)
 #define DASH (21)
 
 #define ENC_FAST 1
 #define ENC_SLOW 5
 
+#ifndef N8ME
 #define DS3231_I2C_ADD 0x68
-//time sync, when the NTP time is not synced, this tracks the number of seconds 
-//between the system cloc and the actual time set by \utc command
-static long time_delta = 0;
+#endif
 
-//mouse/touch screen state
+// time sync, when the NTP time is not synced, this tracks the number of seconds 
+// between the system clock and the actual time set by \utc command
+#ifndef N8ME
+static long time_delta = 0;
+#endif
+
+// mouse/touch screen state
 static int mouse_down = 0;
 static int last_mouse_x = -1;
 static int last_mouse_y = -1;
 
 //encoder state
 struct encoder {
-	int pin_a,  pin_b;
+	int pin_a, pin_b;
 	int speed;
 	int prev_state;
 	int history;
 };
+
 void tuning_isr(void);
 
 #define COLOR_SELECTED_TEXT 0
-#define COLOR_TEXT 1
-#define COLOR_TEXT_MUTED 2
-#define COLOR_SELECTED_BOX 3 
-#define COLOR_BACKGROUND 4
-#define COLOR_FREQ 5
-#define COLOR_LABEL 6
+#define COLOR_TEXT          1
+#define COLOR_TEXT_MUTED    2
+#define COLOR_SELECTED_BOX  3 
+#define COLOR_BACKGROUND    4
+#define COLOR_FREQ          5
+#define COLOR_LABEL         6
 #define SPECTRUM_BACKGROUND 7
-#define SPECTRUM_GRID 8
-#define SPECTRUM_PLOT 9
-#define SPECTRUM_NEEDLE 10
-#define COLOR_CONTROL_BOX 11
+#define SPECTRUM_GRID       8
+#define SPECTRUM_PLOT       9
+#define SPECTRUM_NEEDLE    10
+#define COLOR_CONTROL_BOX  11
 #define SPECTRUM_BANDWIDTH 12
-#define SPECTRUM_PITCH 13
-#define SELECTED_LINE 14
+#define SPECTRUM_PITCH     13
+#define SELECTED_LINE      14
 
 float palette[][3] = {
 	{1,1,1}, 		// COLOR_SELECTED_TEXT
 	{0,1,1},		// COLOR_TEXT
-	{0.5,0.5,0.5}, //COLOR_TEXT_MUTED
+	{0.5,0.5,0.5},  // COLOR_TEXT_MUTED
 	{1,1,1},		// COLOR_SELECTED_BOX
 	{0,0,0},		// COLOR_BACKGROUND
-	{1,1,0},		//COLOR_FREQ
-	{1,0,1},		//COLOR_LABEL
-	//spectrum
-	{0,0,0},	//SPECTRUM_BACKGROUND
-	{0.1, 0.1, 0.1}, //SPECTRUM_GRID
-	{1,1,0},	//SPECTRUM_PLOT
-	{0.2,0.2,0.2}, 	//SPECTRUM_NEEDLE
-	{0.5,0.5,0.5}, //COLOR_CONTROL_BOX
-	{0.2, 0.2, 0.2}, //SPECTRUM_BANDWIDTH
-	{1,0,0},	//SPECTRUM_PITCH
-	{0.1, 0.1, 0.2} //SELECTED_LINE
+	{1,1,0},		// COLOR_FREQ
+	{1,0,1},		// COLOR_LABEL
+	// spectrum
+	{0,0,0},	   // SPECTRUM_BACKGROUND
+	{0.1,0.1,0.1}, // SPECTRUM_GRID
+	{1,1,0},	   // SPECTRUM_PLOT
+	{0.2,0.2,0.2}, // SPECTRUM_NEEDLE
+	{0.5,0.5,0.5}, // COLOR_CONTROL_BOX
+	{0.2,0.2,0.2}, // SPECTRUM_BANDWIDTH
+	{1,0,0},	   // SPECTRUM_PITCH
+	{0.1,0.1,0.2}  // SELECTED_LINE
 };
 
 char *ui_font = "Sans";
@@ -136,7 +143,6 @@ struct font_style {
 	int height;
 	int weight;
 	int type;
-	
 };
 
 guint key_modifier = 0;
@@ -163,21 +169,21 @@ struct encoder enc_a, enc_b;
 
 #define MAX_FIELD_LENGTH 128
 
-#define FIELD_NUMBER 0
-#define FIELD_BUTTON 1
-#define FIELD_TOGGLE 2
+#define FIELD_NUMBER    0
+#define FIELD_BUTTON    1
+#define FIELD_TOGGLE    2
 #define FIELD_SELECTION 3
-#define FIELD_TEXT 4
-#define FIELD_STATIC 5
-#define FIELD_CONSOLE 6
+#define FIELD_TEXT      4
+#define FIELD_STATIC    5
+#define FIELD_CONSOLE   6
 
 // The console is a series of lines
 #define MAX_CONSOLE_BUFFER 10000
-#define MAX_LINE_LENGTH 128
-#define MAX_CONSOLE_LINES 500
-static int 	console_cols = 50;
+#define MAX_LINE_LENGTH      128
+#define MAX_CONSOLE_LINES    500
+static int console_cols = 50;
 
-//we use just one text list in our user interface
+// we use just one text list in our user interface
 
 struct console_line {
 	char text[MAX_LINE_LENGTH];
@@ -191,32 +197,34 @@ struct Queue q_web;
 
 
 // event ids, some of them are mapped from gtk itself
-#define FIELD_DRAW 0
-#define FIELD_UPDATE 1 
-#define FIELD_EDIT 2
-#define MIN_KEY_UP 0xFF52
-#define MIN_KEY_DOWN	0xFF54
-#define MIN_KEY_LEFT 0xFF51
-#define MIN_KEY_RIGHT 0xFF53
-#define MIN_KEY_ENTER 0xFF0D
-#define MIN_KEY_ESC	0xFF1B
-#define MIN_KEY_BACKSPACE 0xFF08
-#define MIN_KEY_TAB 0xFF09
-#define MIN_KEY_CONTROL 0xFFE3
-#define MIN_KEY_F1 0xFFBE
-#define MIN_KEY_F2 0xFFBF
-#define MIN_KEY_F3 0xFFC0
-#define MIN_KEY_F4 0xFFC1
-#define MIN_KEY_F5 0xFFC2
-#define MIN_KEY_F6 0xFFC3
-#define MIN_KEY_F7 0xFFC4
-#define MIN_KEY_F8 0xFFC5
-#define MIN_KEY_F9 0xFFC6
-#define MIN_KEY_F9 0xFFC6
-#define MIN_KEY_F10 0xFFC7
-#define MIN_KEY_F11 0xFFC8
-#define MIN_KEY_F12 0xFFC9
-#define COMMAND_ESCAPE '\\'
+#define FIELD_DRAW		0
+#define FIELD_UPDATE	1 
+#define FIELD_EDIT		2
+
+#define MIN_KEY_UP			0xFF52
+#define MIN_KEY_DOWN		0xFF54
+#define MIN_KEY_LEFT		0xFF51
+#define MIN_KEY_RIGHT		0xFF53
+#define MIN_KEY_ENTER		0xFF0D
+#define MIN_KEY_ESC			0xFF1B
+#define MIN_KEY_BACKSPACE	0xFF08
+#define MIN_KEY_TAB			0xFF09
+#define MIN_KEY_CONTROL		0xFFE3
+#define MIN_KEY_F1			0xFFBE
+#define MIN_KEY_F2			0xFFBF
+#define MIN_KEY_F3			0xFFC0
+#define MIN_KEY_F4			0xFFC1
+#define MIN_KEY_F5			0xFFC2
+#define MIN_KEY_F6			0xFFC3
+#define MIN_KEY_F7			0xFFC4
+#define MIN_KEY_F8			0xFFC5
+#define MIN_KEY_F9			0xFFC6
+#define MIN_KEY_F9			0xFFC6
+#define MIN_KEY_F10			0xFFC7
+#define MIN_KEY_F11			0xFFC8
+#define MIN_KEY_F12			0xFFC9
+
+#define COMMAND_ESCAPE	'\\'
 
 void set_ui(int id);
 void set_bandwidth(int hz);
@@ -272,7 +280,7 @@ static int measure_text(cairo_t *gfx, char *text, int font_entry){
 
 static void draw_text(cairo_t *gfx, int x, int y, char *text, int font_entry){
 	struct font_style *s  = font_table + font_entry;
-  cairo_set_source_rgb( gfx, s->r, s->g, s->b);
+	cairo_set_source_rgb( gfx, s->r, s->g, s->b);
 	cairo_select_font_face(gfx, s->name, s->type, s->weight);
 	cairo_set_font_size(gfx, s->height);
 	cairo_move_to(gfx, x, y + s->height);
@@ -280,22 +288,22 @@ static void draw_text(cairo_t *gfx, int x, int y, char *text, int font_entry){
 }
 
 static void fill_rect(cairo_t *gfx, int x, int y, int w, int h, int color){
-  cairo_set_source_rgb( gfx, palette[color][0], palette[color][1], palette[color][2]);
+	cairo_set_source_rgb( gfx, palette[color][0], palette[color][1], palette[color][2]);
 	cairo_rectangle(gfx, x, y, w, h);
-  cairo_fill(gfx);
+	cairo_fill(gfx);
 }
 
 static void rect(cairo_t *gfx, int x, int y, int w, int h, 
 	int color, int thickness){
 
-  cairo_set_source_rgb( gfx, 
+	cairo_set_source_rgb( gfx, 
 		palette[color][0], 
 		palette[color][1], 
 		palette[color][2]);
 
 	cairo_set_line_width(gfx, thickness);
 	cairo_rectangle(gfx, x, y, w, h);
-  cairo_stroke(gfx);
+	cairo_stroke(gfx);
 }
 
 
@@ -304,21 +312,20 @@ static void rect(cairo_t *gfx, int x, int y, int w, int h,
 	All of them are defined by the struct field
 ****************************************************************************/
 
-
 struct field {
-	char	*cmd;
-	int		(*fn)(struct field *f, cairo_t *gfx, int event, int param_a, int param_b, int param_c);
-	int		x, y, width, height;
-	char	label[30];
-	int 	label_width;
-	char	value[MAX_FIELD_LENGTH];
-	char	value_type; //NUMBER, SELECTION, TEXT, TOGGLE, BUTTON
-	int 	font_index; //refers to font_style table
-	char  selection[1000];
-	long int	 	min, max;
-  int step;
-	char is_dirty;
-	char update_remote;
+	char		*cmd;
+	int			(*fn)(struct field *f, cairo_t *gfx, int event, int param_a, int param_b, int param_c);
+	int			x, y, width, height;
+	char		label[30];
+	int 		label_width;
+	char		value[MAX_FIELD_LENGTH];
+	char		value_type; //NUMBER, SELECTION, TEXT, TOGGLE, BUTTON
+	int 		font_index; //refers to font_style table
+	char		selection[1000];
+	long int	min, max;
+	int			step;
+	char		is_dirty;
+	char		update_remote;
 };
 
 #define STACK_DEPTH 4
@@ -327,8 +334,8 @@ struct band {
 	char name[10];
 	int	start;
 	int	stop;
-	//int	power;
-	//int	max;
+	// int	power;
+	// int	max;
 	int index;
 	int	freq[STACK_DEPTH];
 	int mode[STACK_DEPTH];
@@ -343,7 +350,7 @@ struct cmd {
 static unsigned long focus_since = 0;
 static struct field *f_focus = NULL;
 static struct field *f_hover = NULL;
-//variables to power up and down the tx
+// variables to power up and down the tx
 
 static int in_tx = TX_OFF;
 static int key_down = 0;
@@ -395,12 +402,12 @@ struct band band_stack[] = {
 
 #define VFO_A 0 
 #define VFO_B 1 
-//int	vfo_a_freq = 7000000;
-//int	vfo_b_freq = 14000000;
+// int vfo_a_freq = 7000000;
+// int vfo_b_freq = 14000000;
 char vfo_a_mode[10];
 char vfo_b_mode[10];
 
-//usefull data for macros, logging, etc
+// useful data for macros, logging, etc
 char contact_callsign[12];
 char contact_grid[10];
 char sent_rst[10];
@@ -409,7 +416,7 @@ char received_exchange[10];
 
 int	tx_id = 0;
 
-//recording duration in seconds
+// recording duration in seconds
 time_t record_start = 0;
 int	data_delay = 700;
 
@@ -421,7 +428,6 @@ extern int fwdpower, vswr;
 
 void do_cmd(char *cmd);
 void cmd_exec(char *cmd);
-
 
 int do_spectrum(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
 int do_waterfall(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
@@ -443,51 +449,51 @@ int current_layout = LAYOUT_KBD;
 
 // the cmd fields that have '#' are not to be sent to the sdr
 struct field main_controls[] = {
-	{ "r1:freq", do_tuning, 600, 0, 150, 49, "FREQ", 5, "14000000", FIELD_NUMBER, FONT_LARGE_VALUE, 
+	{"r1:freq", do_tuning, 600, 0, 150, 49, "FREQ", 5, "14000000", FIELD_NUMBER, FONT_LARGE_VALUE, 
 		"", 500000, 30000000, 100},
 
 	// Main RX
-	{ "r1:volume", NULL, 750, 330, 50, 50, "AUDIO", 40, "60", FIELD_NUMBER, FONT_FIELD_VALUE, 
+	{"r1:volume", NULL, 750, 330, 50, 50, "AUDIO", 40, "60", FIELD_NUMBER, FONT_FIELD_VALUE, 
 		"", 0, 100, 1},
-	{ "r1:mode", NULL, 500, 330, 50, 50, "MODE", 40, "USB", FIELD_SELECTION, FONT_FIELD_VALUE, 
+	{"r1:mode", NULL, 500, 330, 50, 50, "MODE", 40, "USB", FIELD_SELECTION, FONT_FIELD_VALUE, 
 		"USB/LSB/CW/CWR/FT8/PSK31/RTTY/DIGITAL/2TONE", 0,0, 0},
-	{ "r1:low", NULL, 550, 330, 50, 50, "LOW", 40, "300", FIELD_NUMBER, FONT_FIELD_VALUE, 
+	{"r1:low", NULL, 550, 330, 50, 50, "LOW", 40, "300", FIELD_NUMBER, FONT_FIELD_VALUE, 
 		"", 0,4000, 50},
-	{ "r1:high", NULL, 600, 330, 50, 50, "HIGH", 40, "3000", FIELD_NUMBER, FONT_FIELD_VALUE, 
+	{"r1:high", NULL, 600, 330, 50, 50, "HIGH", 40, "3000", FIELD_NUMBER, FONT_FIELD_VALUE, 
 		"", 300, 10000, 50},
 
-	{ "r1:agc", NULL, 650, 330, 50, 50, "AGC", 40, "SLOW", FIELD_SELECTION, FONT_FIELD_VALUE, 
+	{"r1:agc", NULL, 650, 330, 50, 50, "AGC", 40, "SLOW", FIELD_SELECTION, FONT_FIELD_VALUE, 
 		"OFF/SLOW/MED/FAST", 0, 1024, 1},
-	{ "r1:gain", NULL, 700, 330, 50, 50, "IF", 40, "60", FIELD_NUMBER, FONT_FIELD_VALUE, 
+	{"r1:gain", NULL, 700, 330, 50, 50, "IF", 40, "60", FIELD_NUMBER, FONT_FIELD_VALUE, 
 		"", 0, 100, 1},
 
-	//tx 
-	{ "tx_power", NULL, 550, 430, 50, 50, "DRIVE", 40, "40", FIELD_NUMBER, FONT_FIELD_VALUE, 
+	// tx 
+	{"tx_power", NULL, 550, 430, 50, 50, "DRIVE", 40, "40", FIELD_NUMBER, FONT_FIELD_VALUE, 
 		"", 1, 100, 1},
-	{ "tx_gain", NULL, 550, 380, 50, 50, "MIC", 40, "50", FIELD_NUMBER, FONT_FIELD_VALUE, 
+	{"tx_gain", NULL, 550, 380, 50, 50, "MIC", 40, "50", FIELD_NUMBER, FONT_FIELD_VALUE, 
 		"", 0, 100, 1},
 
-	{ "#split", NULL, 750, 380, 50, 50, "SPLIT", 40, "OFF", FIELD_TOGGLE, FONT_FIELD_VALUE, 
+	{"#split", NULL, 750, 380, 50, 50, "SPLIT", 40, "OFF", FIELD_TOGGLE, FONT_FIELD_VALUE, 
 		"ON/OFF", 0,0,0},
-	{ "tx_compress", NULL, 600, 380, 50, 50, "COMP", 40, "0", FIELD_NUMBER, FONT_FIELD_VALUE, 
+	{"tx_compress", NULL, 600, 380, 50, 50, "COMP", 40, "0", FIELD_NUMBER, FONT_FIELD_VALUE, 
 		"ON/OFF", 0,100,10},
 	{"#rit", NULL, 550, 0, 50, 50, "RIT", 40, "OFF", FIELD_TOGGLE, FONT_FIELD_VALUE, 
 		"ON/OFF", 0,0,0},
-	{ "#tx_wpm", NULL, 650, 380, 50, 50, "WPM", 40, "12", FIELD_NUMBER, FONT_FIELD_VALUE, 
+	{"#tx_wpm", NULL, 650, 380, 50, 50, "WPM", 40, "12", FIELD_NUMBER, FONT_FIELD_VALUE, 
 		"", 1, 50, 1},
-	{ "rx_pitch", do_pitch, 700, 380, 50, 50, "PITCH", 40, "600", FIELD_NUMBER, FONT_FIELD_VALUE, 
+	{"rx_pitch", do_pitch, 700, 380, 50, 50, "PITCH", 40, "600", FIELD_NUMBER, FONT_FIELD_VALUE, 
 		"", 100, 3000, 10},
 	
-	{ "#web", NULL, 600, 430, 50, 50, "WEB", 40, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
+	{"#web", NULL, 600, 430, 50, 50, "WEB", 40, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
 		"", 0,0, 0},
 
-	{ "#tx", NULL, 1000, -1000, 50, 50, "TX", 40, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
+	{"#tx", NULL, 1000, -1000, 50, 50, "TX", 40, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
 		"RX/TX", 0,0, 0},
 
-	{ "#rx", NULL, 650, 430, 50, 50, "RX", 40, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
+	{"#rx", NULL, 650, 430, 50, 50, "RX", 40, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
 		"RX/TX", 0,0, 0},
 	
-	{ "#record", do_record, 700, 430, 50, 50, "REC", 40, "OFF", FIELD_TOGGLE, FONT_FIELD_VALUE, 
+	{"#record", do_record, 700, 430, 50, 50, "REC", 40, "OFF", FIELD_TOGGLE, FONT_FIELD_VALUE, 
 		"ON/OFF", 0,0, 0},
 
 	// top row
@@ -511,44 +517,42 @@ struct field main_controls[] = {
 	{"#text_in", do_text, 0, 340, 398, 20, "TEXT", 70, "text box", FIELD_TEXT, FONT_LOG, 
 		"nothing valuable", 0,128,0},
 
-
-
 	{"#close", NULL, 750, 430 ,50, 50, "_", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
 		"", 0,0,0},
 	{"#off", NULL, 750, 0 ,50, 50, "x", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
 		"", 0,0,0},
   
-  // other settings - currently off screen
-  { "reverse_scrolling", NULL, 1000, -1000, 50, 50, "RS", 40, "ON", FIELD_TOGGLE, FONT_FIELD_VALUE,
-    "ON/OFF", 0,0,0},
-  { "tuning_acceleration", NULL, 1000, -1000, 50, 50, "TA", 40, "ON", FIELD_TOGGLE, FONT_FIELD_VALUE,
-    "ON/OFF", 0,0,0},
-  { "tuning_accel_thresh1", NULL, 1000, -1000, 50, 50, "TAT1", 40, "10000", FIELD_NUMBER, FONT_FIELD_VALUE,
-    "", 100,99999,100},
-  { "tuning_accel_thresh2", NULL, 1000, -1000, 50, 50, "TAT2", 40, "500", FIELD_NUMBER, FONT_FIELD_VALUE,
-    "", 100,99999,100},
-  { "mouse_pointer", NULL, 1000, -1000, 50, 50, "MP", 40, "LEFT", FIELD_SELECTION, FONT_FIELD_VALUE,
-    "BLANK/LEFT/RIGHT/CROSSHAIR", 0,0,0},
+	// other settings - currently off screen
+	{"reverse_scrolling", NULL, 1000, -1000, 50, 50, "RS", 40, "ON", FIELD_TOGGLE, FONT_FIELD_VALUE,
+    	"ON/OFF", 0,0,0},
+	{"tuning_acceleration", NULL, 1000, -1000, 50, 50, "TA", 40, "ON", FIELD_TOGGLE, FONT_FIELD_VALUE,
+    	"ON/OFF", 0,0,0},
+	{"tuning_accel_thresh1", NULL, 1000, -1000, 50, 50, "TAT1", 40, "10000", FIELD_NUMBER, FONT_FIELD_VALUE,
+    	"", 100,99999,100},
+	{"tuning_accel_thresh2", NULL, 1000, -1000, 50, 50, "TAT2", 40, "500", FIELD_NUMBER, FONT_FIELD_VALUE,
+    	"", 100,99999,100},
+	{"mouse_pointer", NULL, 1000, -1000, 50, 50, "MP", 40, "LEFT", FIELD_SELECTION, FONT_FIELD_VALUE,
+    	"BLANK/LEFT/RIGHT/CROSSHAIR", 0,0,0},
 
 
 	//moving global variables into fields 	
-  { "#vfo_a_freq", NULL, 1000, -1000, 50, 50, "VFOA", 40, "14000000", FIELD_NUMBER, FONT_FIELD_VALUE,
-    "", 500000,30000000,1},
-  {"#vfo_b_freq", NULL, 1000, -1000, 50, 50, "VFOB", 40, "7000000", FIELD_NUMBER, FONT_FIELD_VALUE,
-    "", 500000,30000000,1},
-  {"#rit_delta", NULL, 1000, -1000, 50, 50, "RIT_DELTA", 40, "000000", FIELD_NUMBER, FONT_FIELD_VALUE,
-    "", -25000,25000,1},
+	{"#vfo_a_freq", NULL, 1000, -1000, 50, 50, "VFOA", 40, "14000000", FIELD_NUMBER, FONT_FIELD_VALUE,
+    	"", 500000,30000000,1},
+	{"#vfo_b_freq", NULL, 1000, -1000, 50, 50, "VFOB", 40, "7000000", FIELD_NUMBER, FONT_FIELD_VALUE,
+    	"", 500000,30000000,1},
+	{"#rit_delta", NULL, 1000, -1000, 50, 50, "RIT_DELTA", 40, "000000", FIELD_NUMBER, FONT_FIELD_VALUE,
+    	"", -25000,25000,1},
 	{"#mycallsign", NULL, 1000, -1000, 400, 149, "MYCALLSIGN", 70, "NOBODY", FIELD_TEXT, FONT_SMALL, 
 		"", 3,10,1},
 	{"#mygrid", NULL, 1000, -1000, 400, 149, "MYGRID", 70, "NOWHERE", FIELD_TEXT, FONT_SMALL, 
 		"", 4,6,1},
-  { "#cwinput", NULL, 1000, -1000, 50, 50, "CW_INPUT", 40, "KEYBOARD", FIELD_SELECTION, FONT_FIELD_VALUE,
+	{"#cwinput", NULL, 1000, -1000, 50, 50, "CW_INPUT", 40, "KEYBOARD", FIELD_SELECTION, FONT_FIELD_VALUE,
 		"KEYBOARD/IAMBIC/IAMBICB/STRAIGHT", 0,0,0},
-  { "#cwdelay", NULL, 1000, -1000, 50, 50, "CW_DELAY", 40, "300", FIELD_NUMBER, FONT_FIELD_VALUE,
-    "", 50, 1000, 50},
-	{ "#tx_pitch", NULL, 1000, -1000, 50, 50, "TX_PITCH", 40, "600", FIELD_NUMBER, FONT_FIELD_VALUE, 
-    "", 300, 3000, 10},
-	{ "sidetone", NULL, 1000, -1000, 50, 50, "SIDETONE", 40, "25", FIELD_NUMBER, FONT_FIELD_VALUE, 
+	{"#cwdelay", NULL, 1000, -1000, 50, 50, "CW_DELAY", 40, "300", FIELD_NUMBER, FONT_FIELD_VALUE,
+    	"", 50, 1000, 50},
+	{"#tx_pitch", NULL, 1000, -1000, 50, 50, "TX_PITCH", 40, "600", FIELD_NUMBER, FONT_FIELD_VALUE, 
+	    "", 300, 3000, 10},
+	{"sidetone", NULL, 1000, -1000, 50, 50, "SIDETONE", 40, "25", FIELD_NUMBER, FONT_FIELD_VALUE, 
     "", 0, 100, 5},
 	{"#contact_callsign", NULL, 1000, -1000, 400, 149, "", 70, "NOBODY", FIELD_TEXT, FONT_SMALL, 
 		"", 3,10,1},
@@ -573,13 +577,13 @@ struct field main_controls[] = {
   {"#bw_digital", NULL, 1000, -1000, 50, 50, "BW_DIGITAL", 40, "3000", FIELD_NUMBER, FONT_FIELD_VALUE,
     "", 300, 3000, 50},
 
-	//FT8 controls
+	// FT8 controls
 	{"#ft8_auto", NULL, 1000, -1000, 50, 50, "FT8_AUTO", 40, "ON", FIELD_TOGGLE, FONT_FIELD_VALUE, 
 		"ON/OFF", 0,0,0},
 	{"#ft8_tx1st", NULL, 1000, -1000, 50, 50, "FT8_TX1ST", 40, "ON", FIELD_TOGGLE, FONT_FIELD_VALUE, 
 		"ON/OFF", 0,0,0},
-  { "#ft8_repeat", NULL, 1000, -1000, 50, 50, "FT8_REPEAT", 40, "5", FIELD_NUMBER, FONT_FIELD_VALUE,
-    "", 1, 10, 1},
+    {"#ft8_repeat", NULL, 1000, -1000, 50, 50, "FT8_REPEAT", 40, "5", FIELD_NUMBER, FONT_FIELD_VALUE,
+    	"", 1, 10, 1},
 	
 
 	{"#passkey", NULL, 1000, -1000, 400, 149, "PASSKEY", 70, "123", FIELD_TEXT, FONT_SMALL, 
@@ -608,7 +612,7 @@ struct field main_controls[] = {
 
 
 
-	//soft keyboard
+	// soft keyboard
 	{"#kbd_q", do_kbd, 0, 360 ,40, 30, "#", 1, "q", FIELD_BUTTON, FONT_FIELD_VALUE,"", 0,0,0}, 
 	{"#kbd_w", do_kbd, 40, 360, 40, 30, "1", 1, "w", FIELD_BUTTON, FONT_FIELD_VALUE,"", 0,0,0}, 
 	{"#kbd_e", do_kbd, 80, 360, 40, 30, "2", 1, "e", FIELD_BUTTON, FONT_FIELD_VALUE,"", 0,0,0}, 
@@ -700,11 +704,13 @@ struct field main_controls[] = {
 
 struct field *get_field(const char *cmd);
 void update_field(struct field *f);
+#ifndef N8ME
 void tx_on();
 void tx_off();
+#endif
 
-//#define MAX_CONSOLE_LINES 1000
-//char *console_lines[MAX_CONSOLE_LINES];
+// #define MAX_CONSOLE_LINES 1000
+// char *console_lines[MAX_CONSOLE_LINES];
 int last_log = 0;
 
 struct field *get_field(const char *cmd){
@@ -743,7 +749,7 @@ int remote_update_field(int i, char *text){
 	if (f->cmd[0] == 0)
 		return -1;
 	
-	//always send status afresh
+	// always send status afresh
 	if (!strcmp(f->label, "STATUS")){
 		//send time
 		time_t now = time_sbitx();
@@ -759,14 +765,14 @@ int remote_update_field(int i, char *text){
 	int update = f->update_remote;
 	f->update_remote = 0;
 
-	//debug on
-//	if (!strcmp(f->cmd, "#text_in") && strlen(f->value))
-//		printf("#text_in [%s] %d\n", f->value, update);
-	//debug off
+	// debug on
+    //	if (!strcmp(f->cmd, "#text_in") && strlen(f->value))
+    //		printf("#text_in [%s] %d\n", f->value, update);
+	// debug off
 	return update;
 }
 
-//set the field directly to a particuarl value, programmatically
+// set the field directly to a particular value, programmatically
 int set_field(char *id, char *value){
 	struct field *f = get_field(id);
 	int v;
@@ -1942,9 +1948,11 @@ static void focus_field(struct field *f){
 }
 
 time_t time_sbitx(){
+	#ifndef N8ME
 	if (time_delta)
 		return  (millis()/1000l) + time_delta;
 	else
+	#endif
 		return time(NULL);
 }
 
@@ -2843,8 +2851,8 @@ static gboolean on_key_press (GtkWidget *widget, GdkEventKey *event, gpointer us
 		return FALSE;
 	}
 		
-//	printf("keyPress %x %x\n", event->keyval, event->state);
-	//key_modifier = event->keyval;
+	// printf("keyPress %x %x\n", event->keyval, event->state);
+	// key_modifier = event->keyval;
 	switch(event->keyval){
 		case MIN_KEY_ESC:
 			modem_abort();
@@ -2869,9 +2877,13 @@ static gboolean on_key_press (GtkWidget *widget, GdkEventKey *event, gpointer us
 				edit_field(f_focus, MIN_KEY_DOWN);
 			}
 			break;
+		#ifdef N8ME
+		case MIN_KEY_CONTROL:
+		#else
 		case 65507:
+		#endif
 			key_modifier |= event->keyval;
-			//printf("key_modifier set to %d\n", key_modifier);
+			// printf("key_modifier set to %d\n", key_modifier);
 			break;
 		default:
 			//by default, all text goes to the text_input control
@@ -3020,19 +3032,21 @@ void init_gpio_pins(){
 }
 #endif
 
+#ifndef N8ME
 uint8_t dec2bcd(uint8_t val){
 	return ((val/10 * 16) + (val %10));
 }
+#endif
 
+#ifndef N8ME
 uint8_t bcd2dec(uint8_t val){
 	return ((val/16 * 10) + (val %16));
 }
+#endif
 
+#ifndef N8ME
 void rtc_read(){
 	uint8_t rtc_time[10];
-	#ifdef N8ME
-	int timezone, daylight;
-	#endif
 
 	i2cbb_write_i2c_block_data(DS3231_I2C_ADD, 0, 0, NULL);
 
@@ -3076,8 +3090,9 @@ void rtc_read(){
 	printf("rtc julian: %ul %d\n", tjulian, time(NULL) - tjulian);
 
 }
+#endif
 
-
+#ifndef N8ME
 void rtc_write(int year, int month, int day, int hours, int minutes, int seconds){
 	uint8_t rtc_time[10];
 
@@ -3102,9 +3117,11 @@ void rtc_write(int year, int month, int day, int hours, int minutes, int seconds
 	}
 */
 }
+#endif
 
 //this will copy the computer time
 //to the rtc
+#ifndef N8ME
 void rtc_sync(){
 	time_t t = time(NULL);
 	struct tm *t_utc = gmtime(&t);
@@ -3121,6 +3138,7 @@ void rtc_sync(){
 	rtc_write( t_utc->tm_year + 1900,  t_utc->tm_mon + 1, t_utc->tm_mday, 
 		t_utc->tm_hour, t_utc->tm_min, t_utc->tm_sec);
 }
+#endif
 
 int key_poll(){
 	int key = CW_IDLE;
@@ -3610,10 +3628,7 @@ void ui_init(int argc, char *argv[]){
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#ifdef N8ME
-	screen_width = 800;
-	screen_height = 400;
-#else
+#ifndef N8ME
 	screen_width = gdk_screen_width();
 	screen_height = gdk_screen_height();
 #endif
@@ -3772,14 +3787,12 @@ void change_band(char *request){
 	abort_tx();
 }
 
+#ifndef N8ME
 void utc_set(char *args, int update_rtc){
 	int n[7], i;
 	char *p, *q;
 	struct tm t;
 	time_t gm_now;
-	#ifdef N8ME
-	int timezone, daylight;
-	#endif
 
 	i = 0;
 	p =  strtok(args, "-/;: ");
@@ -3827,7 +3840,7 @@ void utc_set(char *args, int update_rtc){
 	time_delta =(long)gm_now -(long)(millis()/1000l);
 	printf("time_delta = %ld\n", time_delta);
 }
-
+#endif
 
 
 void meter_calibrate(){
@@ -4041,8 +4054,10 @@ void cmd_exec(char *cmd){
 	}
 	else if (!strcmp(exec, "abort"))
 		abort_tx();
+	#ifndef N8ME
 	else if (!strcmp(exec, "rtc"))
 		rtc_read();
+	#endif
 	else if (!strcmp(exec, "txcal")){
 		char response[10];
 		sdr_request("txcal=", response);
@@ -4052,9 +4067,11 @@ void cmd_exec(char *cmd){
 		sprintf(response, "\n[Your grid is set to %s]\n", get_field("#mygrid")->value);
 		write_console(FONT_LOG, response);
 	}
+	#ifndef N8ME
 	else if (!strcmp(exec, "utc")){
 		utc_set(args, 1);
 	}
+	#endif
 	else if (!strcmp(exec, "l")){
 		interpret_log(args);
 		update_log_ed();
@@ -4354,7 +4371,9 @@ int main( int argc, char* argv[] ) {
 	q_init(&q_tx_text, 100); //best not to have a very large q 
 	setup();
 
+	#ifndef N8ME
 	rtc_sync();
+	#endif
 
 	struct field *f;
 	f = active_layout;
@@ -4371,7 +4390,7 @@ int main( int argc, char* argv[] ) {
 	do_cmd("r1:freq=7100000");
 	do_cmd("r1:mode=LSB");	
 	do_cmd("#step=1000");	
-  do_cmd("#span=25K");
+    do_cmd("#span=25K");
 	strcpy(vfo_a_mode, "USB");
 	strcpy(vfo_b_mode, "LSB");
 	set_field("#mycallsign", "VU2LCH");
@@ -4393,13 +4412,13 @@ int main( int argc, char* argv[] ) {
 	char *path = getenv("HOME");
 	strcpy(directory, path);
 	strcat(directory, "/sbitx/data/user_settings.ini");
-  if (ini_parse(directory, user_settings_handler, NULL)<0){
-    printf("Unable to load ~/sbitx/data/user_settings.ini\n"
+    if (ini_parse(directory, user_settings_handler, NULL)<0){
+      printf("Unable to load ~/sbitx/data/user_settings.ini\n"
 		"Loading default.ini instead\n");
-		strcpy(directory, path);
-		strcat(directory, "/sbitx/data/default_settings.ini");
-  	ini_parse(directory, user_settings_handler, NULL);
-  }
+	  strcpy(directory, path);
+	  strcat(directory, "/sbitx/data/default_settings.ini");
+  	  ini_parse(directory, user_settings_handler, NULL);
+    }
 
 	if (strlen(get_field("#current_macro")->value))
 		macro_load(get_field("#current_macro")->value, NULL);
