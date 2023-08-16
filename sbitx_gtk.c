@@ -38,7 +38,9 @@ The initial sync between the gui values, the core radio values, settings, et al 
 #include "ini.h"
 #include "hamlib.h"
 #include "remote.h"
+#ifndef N8ME
 #include "wsjtx.h"
+#endif
 #include "i2cbb.h"
 #include "webserver.h"
 #include "logbook.h"
