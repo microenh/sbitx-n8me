@@ -1,7 +1,6 @@
 /*
 The initial sync between the gui values, the core radio values, settings, et al are manually set.
 */
-// test commit/sync
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
