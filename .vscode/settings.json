@@ -7,5 +7,6 @@
     "stdio.h": "c"
   },
   "cmake.buildDirectory": "${workspaceFolder}/builder",
-  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+  "cmake.configureOnOpen": true
 }
