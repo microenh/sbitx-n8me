@@ -2495,7 +2495,7 @@ void open_url(char *url){
 }
 
 void qrz(char *callsign){
-	char 	url[1000];
+	char url[1000];
 
 	sprintf(url, "https://qrz.com/DB/%s &", callsign);
 	open_url(url);
@@ -4382,4 +4382,3 @@ int main( int argc, char* argv[] ) {
   
 	return 0;
 }
-
