@@ -3977,6 +3977,9 @@ void cmd_exec(char *cmd){
 	args[0] = 0;
 
 	write_console(FONT_LOG, cmd);
+	#ifdef N8ME
+	write_console(FONT_LOG, "\n");
+	#endif
 	// copy the exec
 	for (i = 0; *cmd > ' ' && i < sizeof(exec) - 1; i++)
 		exec[i] = *cmd++;

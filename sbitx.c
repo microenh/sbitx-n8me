@@ -670,7 +670,7 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 		mute_count--;
 	}
 
-	//push the data to any potential modem
+	// push the data to any potential modem
 	#ifndef N8ME 
 	modem_rx(rx_list->mode, output_speaker, MAX_BINS/2);
 	#endif
@@ -1395,7 +1395,7 @@ void sdr_request(char *request, char *response){
 			rx_list->agc_speed = 33; 
     	else if (!strcmp(value, "FAST"))
     		rx_list->agc_speed = 10;
-	} else if (!strcmp(cmd, "sidetone")){ //between 100 and 0
+	} else if (!strcmp(cmd, "sidetone")){ // between 100 and 0
 		float t_sidetone = atof(value);
 		if (0 <= t_sidetone && t_sidetone <= 100)
 			sidetone = atof(value) * 20000000;

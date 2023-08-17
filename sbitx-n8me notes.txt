@@ -1,12 +1,23 @@
 sBitx - N8ME Notes
 
+modified /boot/config.txt
+modified /etc/default/gpsd 
+modified /etc/chrony/chrony.conf
+
 8/16/23
 open in window rather than full screen
 don't auto launch fldigi
 disable RTC stuff (done in OS)
 setup GPIO pin direction in setGPIO.py (remove gpio stuff from config.txt)
 added CMakeLists.txt
+removed unused ubitx.c, wsjtx.c and resampler.c
 
 8/17/23
-fixed typo error (trying to find '#kbd_' rather than' #kbd_ ')
-fixed i2cbb error (change to read byte from read block)
+startup terminal errors:
+    fixed "*Error: field[#kbd_] not found. Check for typo?" (trying to find '#kbd_' rather than' #kbd_ ')
+        sbitx_gtk.c:1232 (user_settings_handler)
+    fixed  i2cbb.c:writing address failed at 8 (change to i2cbb_read_byte_data from i2cbb_read_i2c_block_data)
+        sbitx.c:1232 (setup)
+
+added \n to console echo of command (sbitx_gtk.c: 3981 cmd_exec)
+
