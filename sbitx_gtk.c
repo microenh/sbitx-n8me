@@ -1214,24 +1214,32 @@ static void save_user_settings(int forced){
 
 
 static int user_settings_handler(void* user, const char* section, 
-            const char* name, const char* value)
+	const char* name, const char* value)
 {
     char cmd[1000];
     char new_value[200];
 
     strcpy(new_value, value);
     if (!strcmp(section, "r1")){
-      sprintf(cmd, "%s:%s", section, name);
-      set_field(cmd, new_value);
+		sprintf(cmd, "%s:%s", section, name);
+		set_field(cmd, new_value);
     }
     else if (!strcmp(section, "tx")){
-      strcpy(cmd, name);
-      set_field(cmd, new_value);
+		strcpy(cmd, name);
+		set_field(cmd, new_value);
     }
     // if it is an empty section
     else if (strlen(section) == 0){
-      sprintf(cmd, "%s", name);
-      set_field(cmd, new_value); 
+		#ifdef N8ME
+		if (strcmp(name, "#kbd_")) { 
+			strcpy(cmd, name);
+		#else
+		sprintf(cmd, "%s", name);
+		#endif
+		set_field(cmd, new_value); 
+		#ifdef N8ME
+		}
+		#endif
     }
 
 	// band stacks
@@ -1397,26 +1405,26 @@ void draw_waterfall(struct field *f, cairo_t *gfx){
 		if (v > 100)		// we limit ourselves to 100 db range
 			v = 100;
 
-		if (v < 20){								// r = 0, g= 0, increase blue
+		if (v < 20){								// r=0, g=0, increase blue
 			waterfall_map[index++] = 0;
 			waterfall_map[index++] = 0;
 			waterfall_map[index++] = v * 12; 
 		}
-		else if (v < 40){							// r = 0, increase g, blue is max
+		else if (v < 40){							// r=0, increase g, blue is max
 			waterfall_map[index++] = 0;
 			waterfall_map[index++] = (v - 20) * 12;
 			waterfall_map[index++] = 255; 
 		}
-		else if (v < 60){							// r = 0, g= max, decrease b
+		else if (v < 60){							// r=0, g is max, decrease b
 			waterfall_map[index++] = 0;
 			waterfall_map[index++] = 255; 
 			waterfall_map[index++] = (60-v)*12; 
 		}
-		else if (v < 80){						 	// increase r, g = max, b = 0
+		else if (v < 80){						 	// increase r, g is max, b=0
 			waterfall_map[index++] = (v-60) * 12;
 			waterfall_map[index++] = 255;
 			waterfall_map[index++] = 0; 
-		}else {										// r = max, decrease g, b = 0
+		}else {										// r is max, decrease g, b=0
 			waterfall_map[index++] = 255;
 			waterfall_map[index++] = (100-v) * 12;
 			waterfall_map[index++] = 0; 
@@ -1548,7 +1556,7 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 
 	float x_step = (1.0 * f->width )/n_bins;
 
-	//start the plot
+	// start the plot
 	cairo_set_source_rgb(gfx, palette[SPECTRUM_PLOT][0], 
 		palette[SPECTRUM_PLOT][1], palette[SPECTRUM_PLOT][2]);
 	cairo_move_to(gfx, f->x + f->width, f->y + grid_height);
