@@ -4110,40 +4110,11 @@ void cmd_exec(char *cmd){
 	else if (!strcmp(exec, "bandwidth") || !strcmp(exec, "bw")){
 		set_bandwidth(atoi(args));
 	} else if ((!strcmp(exec, "help")) || (!strcmp(exec, "?"))){
-		write_console(FONT_LOG, "Help\r\n\r\n");
-		write_console(FONT_LOG, "\\audio\r\n");
-		write_console(FONT_LOG, "\\callsign [your callsign]\r\n");
-		write_console(FONT_LOG, "\\clear - clear the console display\r\n");
-		write_console(FONT_LOG, "\\cwinput [key|keyer|kbd]\r\n");
-		write_console(FONT_LOG, "\\cwdelay\r\n");
-		write_console(FONT_LOG, "\\cw_tx_pitch\r\n");
-		write_console(FONT_LOG, "\\exchange\r\n");
-		write_console(FONT_LOG, "\\freq\r\n");
-		write_console(FONT_LOG, "\\ft8mode [auto|semiauto|manual]\r\n");
-		write_console(FONT_LOG, "\\grid [your grid]\r\n");
-		write_console(FONT_LOG, "\\l [callsign] [rst]\r\n");
-		write_console(FONT_LOG, "\\logbook\r\n");
-		write_console(FONT_LOG, "\\macro [macro name]\r\n");
-		write_console(FONT_LOG, "\\mode [CW|CWR|USB|LSB|RTTY|FT8|DIGITAL|2TONE]\r\n");
-		write_console(FONT_LOG, "\\qrz [callsign]\r\n");
-		write_console(FONT_LOG, "\\r - receive\r\n");
-		write_console(FONT_LOG, "\\sidetone\r\n");
-		write_console(FONT_LOG, "\\t - transmit\r\n");
-		write_console(FONT_LOG, "\\telnet [server]:[port]\r\n");
-		write_console(FONT_LOG, "\\tclose - close telnet session\r\n");
-		write_console(FONT_LOG, "\\txpitch [100-3000]\r\n");
-		write_console(FONT_LOG, "\\wpm [cw words per minute]\r\n");
-		write_console(FONT_LOG, "Do \\h2 command for help page 2...\r\n");
+		extern char *help_text;
+		write_console(FONT_LOG, help_text);
 	} else if (!strcmp(exec, "h2")){ 
-		write_console(FONT_LOG, "Help - Page 2\r\n\r\n");
-		write_console(FONT_LOG, "\\exit\r\n\r\n");
-		write_console(FONT_LOG, "\\s - view settings\r\n");
-		write_console(FONT_LOG, "\\mp [BLANK|LEFT|RIGHT|CROSSHAIR] - mouse pointer style\r\n");
-		write_console(FONT_LOG, "\\rs [ON|OFF] - reverse scrolling\r\n\r\n");
-		write_console(FONT_LOG, "\\ta [ON|OFF] - Turns tuning acceleration on and off\r\n");
-		write_console(FONT_LOG, "\\tat1 [100-99999] - 1st threshold at which acceleration occurs (default: 10,000)\r\n");
-		write_console(FONT_LOG, "\\tat2 [100-99999] - 2nd threshold at which acceleration occurs (default: 500)\r\n\r\n");
-		write_console(FONT_LOG, "\\cw \\cwr \\usb \\lsb \\rtty \\ft8 \\digital \\dig \\2tone\r\n");
+		extern char *help2_text;
+		write_console(FONT_LOG, help2_text);
 	} else if ((!strcmp(exec, "s")) || (!strcmp(exec, "settings"))){
 		write_console(FONT_LOG, "Settings\r\n\r\n");
 		char temp_string[100];

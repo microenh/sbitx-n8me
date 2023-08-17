@@ -21,3 +21,7 @@ startup terminal errors:
 
 added \n to console echo of command (sbitx_gtk.c: 3981 cmd_exec)
 
+changed help and help2 to string constants
+update help texts
+
+disabled txcal on DE

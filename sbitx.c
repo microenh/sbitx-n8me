@@ -1367,11 +1367,7 @@ void sdr_request(char *request, char *response){
 			set_tx_power_levels();	
 	} else if (!strcmp(cmd, "bridge")){
     	bridge_compensation = atoi(value);
-		#ifdef N8ME
 		printf("bridge compensation = %d\n", bridge_compensation);
-		#else
-		printf("bridge compesation = %d\n", bridge_compensation);
-		#endif
 	} else if(!strcmp(cmd, "r1:gain")){
 		rx_gain = atoi(value);
 		if(!in_tx)
@@ -1404,10 +1400,11 @@ void sdr_request(char *request, char *response){
 			tx_use_line = 0;
     	else if (!strcmp(value, "LINE"))
     		tx_use_line = 1;
-	} else if (!strcmp(cmd, "txcal"))
+	} else if (!strcmp(cmd, "txcal") && (sbitx_version == SBITX_V2))
 		tx_cal();
 	else if (!strcmp(cmd, "tx_compress"))
-		tx_compress = atoi(value); 
-    /* else
-		printf("*Error request[%s] not accepted\n", request); */
+		tx_compress = atoi(value);
+    else {
+		// printf("*Error request[%s] not accepted\n", request); 
+	}
 }
