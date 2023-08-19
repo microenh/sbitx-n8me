@@ -93,7 +93,7 @@ struct encoder {
 	int history;
 };
 
-void tuning_isr(void);
+static void tuning_isr(void);
 
 #define COLOR_SELECTED_TEXT 0
 #define COLOR_TEXT          1
@@ -226,8 +226,8 @@ struct Queue q_web;
 
 #define COMMAND_ESCAPE	'\\'
 
-void set_ui(int id);
-void set_bandwidth(int hz);
+static void set_ui(int id);
+static void set_bandwidth(int hz);
 
 /* 	the field in focus will be exited when you hit an escape
 		the field in focus will be changeable until it loses focus
@@ -265,7 +265,7 @@ static gboolean on_window_state (GtkWidget *widget, GdkEventKey *event,
 	gpointer user_data);
 static gboolean on_resize(GtkWidget *widget, GdkEventConfigure *event, 
 	gpointer user_data);
-gboolean ui_tick(gpointer gook);
+static gboolean ui_tick(gpointer gook);
 
 static int measure_text(cairo_t *gfx, char *text, int font_entry){
 	cairo_text_extents_t ext;
@@ -427,9 +427,9 @@ extern int spectrum_plot[];
 extern int fwdpower, vswr;
 
 void do_cmd(char *cmd);
-void cmd_exec(char *cmd);
+static void cmd_exec(char *cmd);
 
-int do_spectrum(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+static int do_spectrum(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
 int do_waterfall(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
 int do_tuning(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
 int do_text(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
@@ -1973,7 +1973,7 @@ void abort_tx(){
 	tx_off();
 }
 
-int do_spectrum(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+static int do_spectrum(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 	struct field *f_freq, *f_span, *f_pitch;
 	int span, pitch;
 	long freq;
@@ -2686,7 +2686,7 @@ static int layout_handler(void* user, const char* section,
 		f->height = atoi(value);	
 }
 
-void set_ui(int id){
+static void set_ui(int id){
 	struct field *f = get_field("#kbd_q");
 
 	if (id == LAYOUT_KBD){
@@ -3165,7 +3165,7 @@ int enc_read(struct encoder *e) {
 }
 
 static int tuning_ticks = 0;
-void tuning_isr(void){
+static void tuning_isr(void){
 	int tuning = enc_read(&enc_b);
 	if (tuning < 0)
 		tuning_ticks++;
@@ -3262,7 +3262,7 @@ long get_freq(){
 	return atol(get_field("r1:freq")->value);
 }
 
-void set_bandwidth(int hz){
+static void set_bandwidth(int hz){
 	char buff[10], bw_str[10];
 	int low, high;
 	struct field *f_mode = get_field("r1:mode");
@@ -3410,7 +3410,7 @@ void web_get_spectrum(char *buff){
 	return;
 }
 
-gboolean ui_tick(gpointer gook){
+static gboolean ui_tick(gpointer gook){
 	int static ticks = 0;
 
 	ticks++;
@@ -3967,7 +3967,7 @@ void enter_qso(char *args){
 	logbook_add(contact_callsign, rst_sent, exchange_sent, rst_recv, exchange_recv);
 }
 
-void cmd_exec(char *cmd){
+static void cmd_exec(char *cmd){
 	int i, j;
 	int mode = mode_id(get_field("r1:mode")->value);
 

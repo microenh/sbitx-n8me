@@ -1,0 +1,135 @@
+static void tuning_isr(void);
+static void set_ui(int id);
+static void set_bandwidth(int hz);
+static gboolean on_draw_event( GtkWidget* widget, cairo_t *cr, gpointer user_data); 
+static gboolean on_key_release (GtkWidget *widget, GdkEventKey *event, gpointer user_data);
+static gboolean on_key_press (GtkWidget *widget, GdkEventKey *event, gpointer user_data);
+static gboolean on_mouse_press (GtkWidget *widget, GdkEventButton *event, gpointer data); 
+static gboolean on_mouse_move (GtkWidget *widget, GdkEventButton *event, gpointer data); 
+static gboolean on_mouse_release (GtkWidget *widget, GdkEventButton *event, gpointer data); 
+static gboolean on_scroll (GtkWidget *widget, GdkEventScroll *event, gpointer data); 
+static gboolean on_window_state (GtkWidget *widget, GdkEventKey *event, gpointer user_data);
+static gboolean on_resize(GtkWidget *widget, GdkEventConfigure *event, gpointer user_data);
+static gboolean ui_tick(gpointer gook);
+static int measure_text(cairo_t *gfx, char *text, int font_entry){
+static void draw_text(cairo_t *gfx, int x, int y, char *text, int font_entry){
+static void fill_rect(cairo_t *gfx, int x, int y, int w, int h, int color){
+static void rect(cairo_t *gfx, int x, int y, int w, int h, int color, int thickness){
+void do_cmd(char *cmd);  // hamlib.c
+static void cmd_exec(char *cmd);
+static int do_spectrum(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+int do_waterfall(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+int do_tuning(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+int do_text(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+int do_status(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+int do_console(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+int do_pitch(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+int do_kbd(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+int do_mouse_move(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+int do_macro(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+int do_record(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+struct field *get_field(const char *cmd);
+void update_field(struct field *f);
+struct field *get_field(const char *cmd){
+struct field *get_field_by_label(char *label){
+int get_field_value(char *cmd, char *value){
+int get_field_value_by_label(char *label, char *value){
+int remote_update_field(int i, char *text){
+int set_field(char *id, char *value){
+void console_init(){
+void web_add_string(char *string){
+void  web_write(int style, char *data){
+int console_init_next_line(){
+void write_to_remote_app(int style, char *text){
+void write_console(int style, char *text){
+void draw_log(cairo_t *gfx, struct field *f){
+void draw_field(GtkWidget *widget, cairo_t *gfx, struct field *f){
+static void scale_ui(){
+static int mode_id(char *mode_str){
+static void save_user_settings(int forced){
+static int user_settings_handler(void* user, const char* section, const char* name, const char* value) {
+void sdr_modulation_update(int32_t *samples, int count, double scale_up){
+void draw_modulation(struct field *f, cairo_t *gfx){
+void init_waterfall(){
+void draw_waterfall(struct field *f, cairo_t *gfx){
+void draw_spectrum_grid(struct field *f_spectrum, cairo_t *gfx){
+void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
+int waterfall_fn(struct field *f, cairo_t *gfx, int event, int a, int b){
+char* freq_with_separators(char* freq_str){
+void draw_dial(struct field *f, cairo_t *gfx){
+void invalidate_rect(int x, int y, int width, int height){
+void redraw_main_screen(GtkWidget *widget, cairo_t *gfx){
+static gboolean on_draw_event( GtkWidget* widget, cairo_t *cr, gpointer user_data ) {
+static gboolean on_resize(GtkWidget *widget, GdkEventConfigure *event, gpointer user_data) {
+void update_field(struct field *f){
+static void hover_field(struct field *f){
+static void edit_field(struct field *f, int action){
+static void focus_field(struct field *f){
+time_t time_sbitx(){
+void set_operating_freq(int dial_freq, char *response){
+void abort_tx(){
+static int do_spectrum(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+int do_waterfall(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+void remote_execute(char *cmd){
+void call_wipe(){
+void update_log_ed(){
+int do_console(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+int do_status(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+void execute_app(char *app){
+int do_text(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+int do_pitch(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+int do_tuning(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+int do_kbd(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+void write_call_log(){
+void interpret_log(char *text){
+void macro_get_var(char *var, char *s){
+void open_url(char *url){
+void qrz(char *callsign){
+int do_macro(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+int do_record(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+void tx_on(int trigger){
+void tx_off(){
+static int layout_handler(void* user, const char* section, const char* name, const char* value) {
+static void set_ui(int id){
+static void cw_key(int state){
+static gboolean on_key_release (GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
+static gboolean on_key_press (GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
+static gboolean on_scroll (GtkWidget *widget, GdkEventScroll *event, gpointer data) {
+static gboolean on_window_state (GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
+static gboolean on_mouse_release (GtkWidget *widget, GdkEventButton *event, gpointer data) {
+static gboolean on_mouse_move (GtkWidget *widget, GdkEventButton *event, gpointer data) {
+static gboolean on_mouse_press (GtkWidget *widget, GdkEventButton *event, gpointer data) {
+void redraw(){
+int key_poll(){
+void enc_init(struct encoder *e, int speed, int pin_a, int pin_b){
+int enc_state (struct encoder *e) {
+int enc_read(struct encoder *e) {
+static void tuning_isr(void){
+void query_swr(){
+void hw_init(){
+void hamlib_tx(int tx_input){
+int get_cw_delay(){
+int get_cw_input_method(){
+int get_pitch(){
+int get_cw_tx_pitch(){
+int get_data_delay(){
+int get_wpm(){
+long get_freq(){
+static oid set_bandwidth(int hz){
+void set_mode(char *mode){
+void get_mode(char *mode){
+void bin_dump(int length, uint8_t *data){
+int  web_get_console(char *buff, int max){
+void web_get_spectrum(char *buff){
+static gboolean ui_tick(gpointer gook){
+void ui_init(int argc, char *argv[]){
+int get_tx_data_byte(char *c){
+int get_tx_data_length(){
+int is_in_tx(){
+void change_band(char *request){
+void meter_calibrate(){
+void do_cmd(char *cmd){	
+void enter_qso(char *args){
+static void cmd_exec(char *cmd){
+void ensure_single_instance(){
+int main( int argc, char* argv[] ) {
