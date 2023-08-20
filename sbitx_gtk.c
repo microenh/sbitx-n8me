@@ -92,21 +92,23 @@ struct encoder {
 
 static void tuning_isr(void);
 
-#define COLOR_SELECTED_TEXT 0
-#define COLOR_TEXT          1
-#define COLOR_TEXT_MUTED    2
-#define COLOR_SELECTED_BOX  3 
-#define COLOR_BACKGROUND    4
-#define COLOR_FREQ          5
-#define COLOR_LABEL         6
-#define SPECTRUM_BACKGROUND 7
-#define SPECTRUM_GRID       8
-#define SPECTRUM_PLOT       9
-#define SPECTRUM_NEEDLE    10
-#define COLOR_CONTROL_BOX  11
-#define SPECTRUM_BANDWIDTH 12
-#define SPECTRUM_PITCH     13
-#define SELECTED_LINE      14
+enum {
+	COLOR_SELECTED_TEXT,
+	COLOR_TEXT,
+	COLOR_TEXT_MUTED,
+	COLOR_SELECTED_BOX,
+	COLOR_BACKGROUND,
+	COLOR_FREQ,
+	COLOR_LABEL,
+	SPECTRUM_BACKGROUND,
+	SPECTRUM_GRID,
+	SPECTRUM_PLOT,
+	SPECTRUM_NEEDLE,
+	COLOR_CONTROL_BOX,
+	SPECTRUM_BANDWIDTH,
+	SPECTRUM_PITCH,
+	SELECTED_LINE
+};
 
 float palette[][3] = {
 	{1,1,1}, 		// COLOR_SELECTED_TEXT
@@ -165,14 +167,16 @@ struct font_style font_table[] = {
 struct encoder enc_a, enc_b;
 
 #define MAX_FIELD_LENGTH 128
+enum {
+	FIELD_NUMBER,
+	FIELD_BUTTON,
+	FIELD_TOGGLE,
+	FIELD_SELECTION,
+	FIELD_TEXT,
+	FIELD_STATIC,
+	FIELD_CONSOLE
+};
 
-#define FIELD_NUMBER    0
-#define FIELD_BUTTON    1
-#define FIELD_TOGGLE    2
-#define FIELD_SELECTION 3
-#define FIELD_TEXT      4
-#define FIELD_STATIC    5
-#define FIELD_CONSOLE   6
 
 // The console is a series of lines
 #define MAX_CONSOLE_BUFFER 10000
@@ -190,7 +194,6 @@ static int console_style = FONT_LOG;
 static struct console_line console_stream[MAX_CONSOLE_LINES];
 int console_current_line = 0;
 int	console_selected_line = -1;
-struct Queue q_web;
 
 
 // event ids, some of them are mapped from gtk itself
@@ -369,15 +372,16 @@ static int xit = 512;
 static long int tuning_step = 1000;
 static int tx_mode = MODE_USB;
 
-
-#define BAND80M	0
-#define BAND40M	1
-#define BAND30M 2	
-#define BAND20M 3	
-#define BAND17M 4	
-#define BAND15M 5
-#define BAND12M 6 
-#define BAND10M 7 
+enum {
+	BAND80M,
+	BAND40M,
+	BAND30M,
+	BAND20M,
+	BAND17M,
+	BAND15M,
+	BAND12M,
+	BAND10M
+};
 
 struct band band_stack[] = {
 	{"80m", 3500000, 4000000, 0, 
@@ -679,10 +683,6 @@ struct field main_controls[] = {
 
 static struct field *get_field(const char *cmd);
 static void update_field(struct field *f);
-#ifndef N8ME
-void tx_on();
-void tx_off();
-#endif
 
 // #define MAX_CONSOLE_LINES 1000
 // char *console_lines[MAX_CONSOLE_LINES];
@@ -835,94 +835,6 @@ static void console_init(){
 	f->is_dirty = 1;
 }
 
-static void web_add_string(char *string){
-	while (*string){
-		q_write(&q_web, *string++);
-	}
-}
-
-static void  web_write(int style, char *data){
-	char tag[20];
-
-	switch(style){
-		case FONT_FT8_RX:
-			strcpy(tag, "WSJTX-RX");
-			break;
-		case FONT_FLDIGI_RX:
-			strcpy(tag, "FLDIGI-RX");
-			break;
-		case FONT_CW_RX:
-			strcpy(tag, "CW-RX");
-			break;
-		case FONT_FT8_TX:
-			strcpy(tag, "WSJTX-TX");
-			break;
-		case FONT_FT8_QUEUED:
-			strcpy(tag, "WSJTX-Q");
-			break;
-		case FONT_FLDIGI_TX:
-			strcpy(tag, "FLDIGI-TX");
-			break;
-		case FONT_CW_TX:
-			strcpy(tag, "CW-TX");
-			break;
-		case FONT_TELNET:
-			strcpy(tag, "TELNET");
-			break;
-		default:
-			strcpy(tag, "LOG");
-	}
-
-	web_add_string("<");
-	web_add_string(tag);		
-	web_add_string(">");
-
-	while (*data){
-		switch(*data){
-			case '<':
-				q_write(&q_web, '&');
-				q_write(&q_web, 'l');
-				q_write(&q_web, 't');
-				q_write(&q_web, ';');
-				break;
-			case '>':
-				q_write(&q_web, '&');
-				q_write(&q_web, 'g');
-				q_write(&q_web, 't');
-				q_write(&q_web, ';');
-				break;
-			case '"':
-				q_write(&q_web, '&');
-				q_write(&q_web, 'q');
-				q_write(&q_web, 'u');
-				q_write(&q_web, 't');
-				q_write(&q_web, 'e');
-				q_write(&q_web, ';');
-				break;
-			case '\'':
-				q_write(&q_web, '&');
-				q_write(&q_web, 'a');
-				q_write(&q_web, 'p');
-				q_write(&q_web, 'o');
-				q_write(&q_web, 's');
-				q_write(&q_web, ';');
-				break;
-			case '\n':
-				q_write(&q_web, '&');
-				q_write(&q_web, '#');
-				q_write(&q_web, 'x');
-				q_write(&q_web, 'A');
-				q_write(&q_web, ';');
-				break;	
-			default:
-				q_write(&q_web, *data);
-		}
-		data++;
-	}			
-	web_add_string("</");
-	web_add_string(tag);
-	web_add_string(">");
-}
 
 static int console_init_next_line(){
 	console_current_line++;
@@ -948,11 +860,8 @@ void write_console(int style, char *text){
 	strcat(directory, "/sbitx/data/display_log.txt");
 	FILE *pf = fopen(directory, "a");
 
-	web_write(style, text);
 	// move to a new line if the style has changed
 	if (style != console_style){
-		q_write(&q_web, '{');
-		q_write(&q_web, style + 'A');
 		console_style = style;
 		if (strlen(console_stream[console_current_line].text)> 0)
 			console_init_next_line();	
@@ -3353,21 +3262,6 @@ static void bin_dump(int length, uint8_t *data){
 	printf("\n");
 }
 
-int  web_get_console(char *buff, int max){
-	char c;
-	int i;
-
-	if (q_length(&q_web) == 0)
-		return 0;
-	strcpy(buff, "CONSOLE ");
-	buff += strlen("CONSOLE ");
-	for (i = 0; (c = q_read(&q_web)) && i < max; i++){
-		if (c < 128 && c >= ' ')
-			*buff++ = c;
-	}
-	*buff = 0;
-	return i;
-}
 
 void web_get_spectrum(char *buff){
 
@@ -3581,8 +3475,6 @@ static void ui_init(int argc, char *argv[]){
 		screen_height = gdk_screen_height();
 	#endif
 	#pragma pop
-
-	q_init(&q_web, 1000);
 
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	// gtk_window_set_default_size(GTK_WINDOW(window), 800, 480);
