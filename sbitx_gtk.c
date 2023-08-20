@@ -2,46 +2,46 @@
 The initial sync between the gui values, the core radio values, settings, et al are manually set.
 */
 
-#include <unistd.h>
+#include <arpa/inet.h>
+#include <cairo.h>
+#include <complex.h>
+#include <ctype.h>
+#include <errno.h>
+#include <errno.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <fftw3.h>
+#include <gdk/gdkkeysyms.h>
+#include <gtk/gtk.h>
+#include <linux/fb.h>
+#include <linux/types.h>
+#include <math.h>
+#include <ncurses.h>
+#include <netinet/in.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <linux/types.h>
-#include <math.h>
-#include <fcntl.h>
-#include <complex.h>
-#include <fftw3.h>
-#include <linux/fb.h>
-#include <sys/types.h>
-#include <stdint.h>
-#include <ctype.h>
-#include <sys/mman.h>
+#include <sys/file.h>
+#include <sys/file.h>
 #include <sys/ioctl.h>
-#include <ncurses.h>
-#include <gtk/gtk.h>
-#include <gdk/gdkkeysyms.h>
-#include <sys/types.h>
+#include <sys/mman.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <errno.h>
-#include <cairo.h>
-#include <sys/file.h>
-#include <errno.h>
-#include <sys/file.h>
-#include <errno.h>
+#include <sys/types.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <wiringPi.h>
 #include <wiringSerial.h>
 
-#include "sdr.h"
-#include "sound.h"
-#include "sdr_ui.h"
-#include "ini.h"
 #include "hamlib.h"
-#include "remote.h"
 #include "i2cbb.h"
+#include "ini.h"
 #include "logbook.h"
 #include "queue.h"
+#include "remote.h"
+#include "sdr_ui.h"
+#include "sdr.h"
+#include "sound.h"
 
 /* command  buffer for commands received from the remote */
 struct Queue q_remote_commands;
@@ -67,15 +67,6 @@ char pins[15] = {0, 2, 3, 6, 7,
 #define ENC_FAST 1
 #define ENC_SLOW 5
 
-#ifndef N8ME
-#define DS3231_I2C_ADD 0x68
-#endif
-
-// time sync, when the NTP time is not synced, this tracks the number of seconds 
-// between the system clock and the actual time set by \utc command
-#ifndef N8ME
-static long time_delta = 0;
-#endif
 
 // mouse/touch screen state
 static int mouse_down = 0;
@@ -111,25 +102,24 @@ enum {
 };
 
 float palette[][3] = {
-	{1,1,1}, 		// COLOR_SELECTED_TEXT
-	{0,1,1},		// COLOR_TEXT
-	{0.5,0.5,0.5},  // COLOR_TEXT_MUTED
-	{1,1,1},		// COLOR_SELECTED_BOX
-	{0,0,0},		// COLOR_BACKGROUND
-	{1,1,0},		// COLOR_FREQ
-	{1,0,1},		// COLOR_LABEL
+	{1.0, 1.0, 1.0},    // COLOR_SELECTED_TEXT
+	{0.0, 1.0, 1.0},    // COLOR_TEXT
+	{0.5, 0.5, 0.5},    // COLOR_TEXT_MUTED
+	{1.0, 1.0, 1.0},    // COLOR_SELECTED_BOX
+	{0.0, 0.0, 0.0},    // COLOR_BACKGROUND
+	{1.0, 1.0, 0.0},    // COLOR_FREQ
+	{1.0, 0.0, 1.0},    // COLOR_LABEL
 	// spectrum
-	{0,0,0},	   // SPECTRUM_BACKGROUND
-	{0.1,0.1,0.1}, // SPECTRUM_GRID
-	{1,1,0},	   // SPECTRUM_PLOT
-	{0.2,0.2,0.2}, // SPECTRUM_NEEDLE
-	{0.5,0.5,0.5}, // COLOR_CONTROL_BOX
-	{0.2,0.2,0.2}, // SPECTRUM_BANDWIDTH
-	{1,0,0},	   // SPECTRUM_PITCH
-	{0.1,0.1,0.2}  // SELECTED_LINE
+	{0.0, 0.0, 0.0},    // SPECTRUM_BACKGROUND
+	{0.1, 0.1, 0.1},    // SPECTRUM_GRID
+	{1.0, 1.0, 0.0},    // SPECTRUM_PLOT
+	{0.2, 0.2, 0.2},    // SPECTRUM_NEEDLE
+	{0.5, 0.5, 0.5},    // COLOR_CONTROL_BOX
+	{0.2, 0.2, 0.2},    // SPECTRUM_BANDWIDTH
+	{1.0, 0.0, 0.0},    // SPECTRUM_PITCH
+	{0.1, 0.1, 0.2}     // SELECTED_LINE
 };
 
-char *ui_font = "Sans";
 int field_font_size = 12;
 int screen_width=800, screen_height=480;
 
@@ -138,7 +128,7 @@ int screen_width=800, screen_height=480;
 struct font_style {
 	int index;
 	double r, g, b;
-	char name[32];
+	const char *name;
 	int height;
 	int weight;
 	int type;
@@ -146,22 +136,25 @@ struct font_style {
 
 guint key_modifier = 0;
 
+const char MONO[] = "Mono";
+const char ARIAL[] = "Arial";
+
 struct font_style font_table[] = {
-	{FONT_FIELD_LABEL, 0, 1, 1, "Mono", 14, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_FIELD_VALUE, 1, 1, 1, "Mono", 14, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_LARGE_FIELD, 0, 1, 1, "Mono", 14, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_LARGE_VALUE, 1, 1, 1, "Arial", 24, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_SMALL, 0, 1, 1, "Mono", 10, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_LOG, 1, 1, 1, "Mono", 12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_FT8_RX, 0, 1, 0, "Mono", 12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_FT8_TX, 1, 0.6, 0, "Mono", 12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_SMALL_FIELD_VALUE, 1, 1, 1, "Mono", 11, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_CW_RX, 0, 1, 0, "Mono", 12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_CW_TX, 1, 0.6, 0, "Mono", 12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_FLDIGI_RX, 0, 1, 0, "Mono", 12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_FLDIGI_TX, 1, 0.6, 0, "Mono", 12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_TELNET, 0, 1, 0, "Mono", 12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_FT8_QUEUED, 1, 0.6, 0, "Mono", 12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
+	{FONT_FIELD_LABEL,       0.0, 1.0, 1.0, MONO,  14, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
+	{FONT_FIELD_VALUE,       1.0, 1.0, 1.0, MONO,  14, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
+	{FONT_LARGE_FIELD,       0.0, 1.0, 1.0, MONO,  14, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
+	{FONT_LARGE_VALUE,       1.0, 1.0, 1.0, ARIAL, 24, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
+	{FONT_SMALL,             0.0, 1.0, 1.0, MONO,  10, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
+	{FONT_LOG,               1.0, 1.0, 1.0, MONO,  12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
+	{FONT_FT8_RX,            0.0, 1.0, 0.0, MONO,  12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
+	{FONT_FT8_TX,            1.0, 0.6, 0.0, MONO,  12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
+	{FONT_SMALL_FIELD_VALUE, 1.0, 1.0, 1.0, MONO,  11, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
+	{FONT_CW_RX,             0.0, 1.0, 0.0, MONO,  12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
+	{FONT_CW_TX,             1.0, 0.6, 0.0, MONO,  12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
+	{FONT_FLDIGI_RX,         0.0, 1.0, 0.0, MONO,  12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
+	{FONT_FLDIGI_TX,         1.0, 0.6, 0.0, MONO,  12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
+	{FONT_TELNET,            0.0, 1.0, 0.0, MONO,  12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
+	{FONT_FT8_QUEUED,        1.0, 0.6, 0.0, MONO,  12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
 };
 
 struct encoder enc_a, enc_b;
@@ -195,11 +188,12 @@ static struct console_line console_stream[MAX_CONSOLE_LINES];
 int console_current_line = 0;
 int	console_selected_line = -1;
 
-
 // event ids, some of them are mapped from gtk itself
-#define FIELD_DRAW		0
-#define FIELD_UPDATE	1 
-#define FIELD_EDIT		2
+enum {
+    FIELD_DRAW,
+    FIELD_UPDATE,
+    FIELD_EDIT
+};
 
 #define MIN_KEY_UP			0xFF52
 #define MIN_KEY_DOWN		0xFF54
@@ -247,24 +241,15 @@ GtkWidget *window;
 GtkWidget *display_area = NULL;
 
 // these are callbacks called by the operating system
-static gboolean on_draw_event( GtkWidget* widget, cairo_t *cr, 
-	gpointer user_data); 
-static gboolean on_key_release (GtkWidget *widget, GdkEventKey *event, 
-	gpointer user_data);
-static gboolean on_key_press (GtkWidget *widget, GdkEventKey *event, 
-	gpointer user_data);
-static gboolean on_mouse_press (GtkWidget *widget, GdkEventButton *event, 
-	gpointer data); 
-static gboolean on_mouse_move (GtkWidget *widget, GdkEventButton *event, 
-	gpointer data); 
-static gboolean on_mouse_release (GtkWidget *widget, GdkEventButton *event, 
-	gpointer data); 
-static gboolean on_scroll (GtkWidget *widget, GdkEventScroll *event, 
-	gpointer data); 
-static gboolean on_window_state (GtkWidget *widget, GdkEventKey *event, 
-	gpointer user_data);
-static gboolean on_resize(GtkWidget *widget, GdkEventConfigure *event, 
-	gpointer user_data);
+static gboolean on_draw_event(GtkWidget* widget, cairo_t *cr, gpointer user_data); 
+static gboolean on_key_release(GtkWidget *widget, GdkEventKey *event, gpointer user_data);
+static gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer user_data);
+static gboolean on_mouse_press(GtkWidget *widget, GdkEventButton *event, gpointer data); 
+static gboolean on_mouse_move(GtkWidget *widget, GdkEventButton *event, gpointer data); 
+static gboolean on_mouse_release(GtkWidget *widget, GdkEventButton *event, gpointer data); 
+static gboolean on_scroll(GtkWidget *widget, GdkEventScroll *event, gpointer data); 
+static gboolean on_window_state(GtkWidget *widget, GdkEventKey *event, gpointer user_data);
+static gboolean on_resize(GtkWidget *widget, GdkEventConfigure *event, gpointer user_data);
 static gboolean ui_tick(gpointer gook);
 
 static void update_log_ed();
@@ -321,8 +306,8 @@ struct field {
 	char		label[30];
 	int 		label_width;
 	char		value[MAX_FIELD_LENGTH];
-	char		value_type; //NUMBER, SELECTION, TEXT, TOGGLE, BUTTON
-	int 		font_index; //refers to font_style table
+	char		value_type; // NUMBER, SELECTION, TEXT, TOGGLE, BUTTON
+	int 		font_index; // refers to font_style table
 	char		selection[1000];
 	long int	min, max;
 	int			step;
@@ -384,22 +369,14 @@ enum {
 };
 
 struct band band_stack[] = {
-	{"80m", 3500000, 4000000, 0, 
-		{3500000,3574000,3600000,3700000},{MODE_CW, MODE_USB, MODE_CW,MODE_LSB}},
-	{"40m", 7000000,7300000, 0,
-		{7000000,7040000,7074000,7150000},{MODE_CW, MODE_CW, MODE_USB, MODE_LSB}},
-	{"30m", 10100000, 10150000, 0,
-		{10100000, 10100000, 10136000, 10150000}, {MODE_CW, MODE_CW, MODE_USB, MODE_USB}},
-	{"20m", 14000000, 14400000, 0,
-		{14010000, 14040000, 14074000, 14200000}, {MODE_CW, MODE_CW, MODE_USB, MODE_USB}},
-	{"17m", 18068000, 18168000, 0,
-		{18068000, 18100000, 18110000, 18160000}, {MODE_CW, MODE_CW, MODE_USB, MODE_USB}},
-	{"15m", 21000000, 21500000, 0,
-		{21010000, 21040000, 21074000, 21250000}, {MODE_CW, MODE_CW, MODE_USB, MODE_USB}},
-	{"12m", 24890000, 24990000, 0,
-		{24890000, 24910000, 24950000, 24990000}, {MODE_CW, MODE_CW, MODE_USB, MODE_USB}},
-	{"10m", 28000000, 29700000, 0,
-		{28000000, 28040000, 28074000, 28250000}, {MODE_CW, MODE_CW, MODE_USB, MODE_USB}},
+	{"80m",  3500000,  4000000, 0, { 3500000,  3574000,  3600000,  3700000}, {MODE_CW, MODE_USB, MODE_CW,  MODE_LSB}},
+	{"40m",  7000000,  7300000, 0, { 7000000,  7040000,  7074000,  7150000}, {MODE_CW, MODE_CW,  MODE_USB, MODE_LSB}},
+	{"30m", 10100000, 10150000, 0, {10100000, 10100000, 10136000, 10150000}, {MODE_CW, MODE_CW,  MODE_USB, MODE_USB}},
+	{"20m", 14000000, 14400000, 0, {14010000, 14040000, 14074000, 14200000}, {MODE_CW, MODE_CW,  MODE_USB, MODE_USB}},
+	{"17m", 18068000, 18168000, 0, {18068000, 18100000, 18110000, 18160000}, {MODE_CW, MODE_CW,  MODE_USB, MODE_USB}},
+	{"15m", 21000000, 21500000, 0, {21010000, 21040000, 21074000, 21250000}, {MODE_CW, MODE_CW,  MODE_USB, MODE_USB}},
+	{"12m", 24890000, 24990000, 0, {24890000, 24910000, 24950000, 24990000}, {MODE_CW, MODE_CW,  MODE_USB, MODE_USB}},
+	{"10m", 28000000, 29700000, 0, {28000000, 28040000, 28074000, 28250000}, {MODE_CW, MODE_CW,  MODE_USB, MODE_USB}},
 };
 
 
@@ -440,7 +417,6 @@ static int do_status(struct field *f, cairo_t *gfx, int event, int a, int b, int
 static int do_console(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
 static int do_pitch(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
 static int do_kbd(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-// static int do_mouse_move(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
 static int do_macro(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
 static int do_record(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
 
@@ -452,162 +428,97 @@ int current_layout = LAYOUT_KBD;
 
 // the cmd fields that have '#' are not to be sent to the sdr
 struct field main_controls[] = {
-	{"r1:freq", do_tuning, 600, 0, 150, 49, "FREQ", 5, "14000000", FIELD_NUMBER, FONT_LARGE_VALUE, 
-		"", 500000, 30000000, 100},
+	{"r1:freq", do_tuning, 600, 0, 150, 49, "FREQ", 5, "14000000", FIELD_NUMBER, FONT_LARGE_VALUE, "", 500000, 30000000, 100},
 
 	// Main RX
-	{"r1:volume", NULL, 750, 330, 50, 50, "AUDIO", 40, "60", FIELD_NUMBER, FONT_FIELD_VALUE, 
-		"", 0, 100, 1},
-	{"r1:mode", NULL, 500, 330, 50, 50, "MODE", 40, "USB", FIELD_SELECTION, FONT_FIELD_VALUE, 
-		"USB/LSB/CW/CWR/FT8/PSK31/RTTY/DIGITAL/2TONE", 0,0, 0},
-	{"r1:low", NULL, 550, 330, 50, 50, "LOW", 40, "300", FIELD_NUMBER, FONT_FIELD_VALUE, 
-		"", 0,4000, 50},
-	{"r1:high", NULL, 600, 330, 50, 50, "HIGH", 40, "3000", FIELD_NUMBER, FONT_FIELD_VALUE, 
-		"", 300, 10000, 50},
+	{"r1:volume", NULL, 750, 330, 50, 50, "AUDIO", 40, "60", FIELD_NUMBER, FONT_FIELD_VALUE,  "", 0, 100, 1},
+	{"r1:mode", NULL, 500, 330, 50, 50, "MODE", 40, "USB", FIELD_SELECTION, FONT_FIELD_VALUE,  "USB/LSB/CW/CWR/FT8/PSK31/RTTY/DIGITAL/2TONE", 0,0, 0},
+	{"r1:low", NULL, 550, 330, 50, 50, "LOW", 40, "300", FIELD_NUMBER, FONT_FIELD_VALUE,  "", 0,4000, 50},
+	{"r1:high", NULL, 600, 330, 50, 50, "HIGH", 40, "3000", FIELD_NUMBER, FONT_FIELD_VALUE,  "", 300, 10000, 50},
 
-	{"r1:agc", NULL, 650, 330, 50, 50, "AGC", 40, "SLOW", FIELD_SELECTION, FONT_FIELD_VALUE, 
-		"OFF/SLOW/MED/FAST", 0, 1024, 1},
-	{"r1:gain", NULL, 700, 330, 50, 50, "IF", 40, "60", FIELD_NUMBER, FONT_FIELD_VALUE, 
-		"", 0, 100, 1},
+	{"r1:agc", NULL, 650, 330, 50, 50, "AGC", 40, "SLOW", FIELD_SELECTION, FONT_FIELD_VALUE,  "OFF/SLOW/MED/FAST", 0, 1024, 1},
+	{"r1:gain", NULL, 700, 330, 50, 50, "IF", 40, "60", FIELD_NUMBER, FONT_FIELD_VALUE,  "", 0, 100, 1},
 
 	// tx 
-	{"tx_power", NULL, 550, 430, 50, 50, "DRIVE", 40, "40", FIELD_NUMBER, FONT_FIELD_VALUE, 
-		"", 1, 100, 1},
-	{"tx_gain", NULL, 550, 380, 50, 50, "MIC", 40, "50", FIELD_NUMBER, FONT_FIELD_VALUE, 
-		"", 0, 100, 1},
+	{"tx_power", NULL, 550, 430, 50, 50, "DRIVE", 40, "40", FIELD_NUMBER, FONT_FIELD_VALUE,  "", 1, 100, 1},
+	{"tx_gain", NULL, 550, 380, 50, 50, "MIC", 40, "50", FIELD_NUMBER, FONT_FIELD_VALUE,  "", 0, 100, 1},
 
-	{"#split", NULL, 750, 380, 50, 50, "SPLIT", 40, "OFF", FIELD_TOGGLE, FONT_FIELD_VALUE, 
-		"ON/OFF", 0,0,0},
-	{"tx_compress", NULL, 600, 380, 50, 50, "COMP", 40, "0", FIELD_NUMBER, FONT_FIELD_VALUE, 
-		"ON/OFF", 0,100,10},
-	{"#rit", NULL, 550, 0, 50, 50, "RIT", 40, "OFF", FIELD_TOGGLE, FONT_FIELD_VALUE, 
-		"ON/OFF", 0,0,0},
-	{"#tx_wpm", NULL, 650, 380, 50, 50, "WPM", 40, "12", FIELD_NUMBER, FONT_FIELD_VALUE, 
-		"", 1, 50, 1},
-	{"rx_pitch", do_pitch, 700, 380, 50, 50, "PITCH", 40, "600", FIELD_NUMBER, FONT_FIELD_VALUE, 
-		"", 100, 3000, 10},
+	{"#split", NULL, 750, 380, 50, 50, "SPLIT", 40, "OFF", FIELD_TOGGLE, FONT_FIELD_VALUE,  "ON/OFF", 0,0,0},
+	{"tx_compress", NULL, 600, 380, 50, 50, "COMP", 40, "0", FIELD_NUMBER, FONT_FIELD_VALUE,  "ON/OFF", 0,100,10},
+	{"#rit", NULL, 550, 0, 50, 50, "RIT", 40, "OFF", FIELD_TOGGLE, FONT_FIELD_VALUE,  "ON/OFF", 0,0,0},
+	{"#tx_wpm", NULL, 650, 380, 50, 50, "WPM", 40, "12", FIELD_NUMBER, FONT_FIELD_VALUE,  "", 1, 50, 1},
+	{"rx_pitch", do_pitch, 700, 380, 50, 50, "PITCH", 40, "600", FIELD_NUMBER, FONT_FIELD_VALUE,  "", 100, 3000, 10},
 	
-	{"#tx", NULL, 1000, -1000, 50, 50, "TX", 40, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
-		"RX/TX", 0,0, 0},
+	{"#tx", NULL, 1000, -1000, 50, 50, "TX", 40, "", FIELD_BUTTON, FONT_FIELD_VALUE, "RX/TX", 0,0, 0},
 
-	{"#rx", NULL, 650, 430, 50, 50, "RX", 40, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
-		"RX/TX", 0,0, 0},
+	{"#rx", NULL, 650, 430, 50, 50, "RX", 40, "", FIELD_BUTTON, FONT_FIELD_VALUE,  "RX/TX", 0,0, 0},
 	
-	{"#record", do_record, 700, 430, 50, 50, "REC", 40, "OFF", FIELD_TOGGLE, FONT_FIELD_VALUE, 
-		"ON/OFF", 0,0, 0},
+	{"#record", do_record, 700, 430, 50, 50, "REC", 40, "OFF", FIELD_TOGGLE, FONT_FIELD_VALUE, "ON/OFF", 0,0, 0},
 
 	// top row
-	{"#step", NULL, 400, 0 ,50, 50, "STEP", 1, "10Hz", FIELD_SELECTION, FONT_FIELD_VALUE, 
-		"1M/100K/10K/1K/100H/10H", 0,0,0},
-	{"#vfo", NULL, 450, 0 ,50, 50, "VFO", 1, "A", FIELD_SELECTION, FONT_FIELD_VALUE, 
-		"A/B", 0,0,0},
-	{"#span", NULL, 500, 0 ,50, 50, "SPAN", 1, "25K", FIELD_SELECTION, FONT_FIELD_VALUE, 
-		"25K/10K/6K/2.5K", 0,0,0},
+	{"#step", NULL, 400, 0 ,50, 50, "STEP", 1, "10Hz", FIELD_SELECTION, FONT_FIELD_VALUE, "1M/100K/10K/1K/100H/10H", 0,0,0},
+	{"#vfo", NULL, 450, 0 ,50, 50, "VFO", 1, "A", FIELD_SELECTION, FONT_FIELD_VALUE, "A/B", 0,0,0},
+	{"#span", NULL, 500, 0 ,50, 50, "SPAN", 1, "25K", FIELD_SELECTION, FONT_FIELD_VALUE,  "25K/10K/6K/2.5K", 0,0,0},
 
-	{"spectrum", do_spectrum, 400, 80, 400, 100, "Spectrum ", 70, "7000 KHz", FIELD_STATIC, FONT_SMALL, 
-		"", 0,0,0},  
-	{"#status", do_status, 400, 51, 400, 29, "STATUS", 70, "7000 KHz", FIELD_STATIC, FONT_SMALL, 
-		"status", 0,0,0},  
-	{"waterfall", do_waterfall, 400, 180 , 400, 149, "Waterfall ", 70, "7000 KHz", FIELD_STATIC, FONT_SMALL, 
-		"", 0,0,0},
-	{"#console", do_console, 0, 0 , 400, 320, "CONSOLE", 70, "console box", FIELD_CONSOLE, FONT_LOG, 
-		"nothing valuable", 0,0,0},
-	{"#log_ed", NULL, 0, 320, 400, 20, "", 70, "", FIELD_STATIC, FONT_LOG, 
-		"nothing valuable", 0,128,0},
-	{"#text_in", do_text, 0, 340, 398, 20, "TEXT", 70, "text box", FIELD_TEXT, FONT_LOG, 
-		"nothing valuable", 0,128,0},
+	{"spectrum", do_spectrum, 400, 80, 400, 100, "Spectrum ", 70, "7000 KHz", FIELD_STATIC, FONT_SMALL, "", 0,0,0},  
+	{"#status", do_status, 400, 51, 400, 29, "STATUS", 70, "7000 KHz", FIELD_STATIC, FONT_SMALL,  "status", 0,0,0},  
+	{"waterfall", do_waterfall, 400, 180 , 400, 149, "Waterfall ", 70, "7000 KHz", FIELD_STATIC, FONT_SMALL,  "", 0,0,0},
+	{"#console", do_console, 0, 0 , 400, 320, "CONSOLE", 70, "console box", FIELD_CONSOLE, FONT_LOG,  "nothing valuable", 0,0,0},
+	{"#log_ed", NULL, 0, 320, 400, 20, "", 70, "", FIELD_STATIC, FONT_LOG, "nothing valuable", 0,128,0},
+	{"#text_in", do_text, 0, 340, 398, 20, "TEXT", 70, "text box", FIELD_TEXT, FONT_LOG, "nothing valuable", 0,128,0},
 
-	{"#close", NULL, 750, 430 ,50, 50, "_", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
-		"", 0,0,0},
-	{"#off", NULL, 750, 0 ,50, 50, "x", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
-		"", 0,0,0},
+	{"#close", NULL, 750, 430 ,50, 50, "_", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE,  "", 0,0,0},
+	{"#off", NULL, 750, 0 ,50, 50, "x", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE,  "", 0,0,0},
   
 	// other settings - currently off screen
-	{"reverse_scrolling", NULL, 1000, -1000, 50, 50, "RS", 40, "ON", FIELD_TOGGLE, FONT_FIELD_VALUE,
-    	"ON/OFF", 0,0,0},
-	{"tuning_acceleration", NULL, 1000, -1000, 50, 50, "TA", 40, "ON", FIELD_TOGGLE, FONT_FIELD_VALUE,
-    	"ON/OFF", 0,0,0},
-	{"tuning_accel_thresh1", NULL, 1000, -1000, 50, 50, "TAT1", 40, "10000", FIELD_NUMBER, FONT_FIELD_VALUE,
-    	"", 100,99999,100},
-	{"tuning_accel_thresh2", NULL, 1000, -1000, 50, 50, "TAT2", 40, "500", FIELD_NUMBER, FONT_FIELD_VALUE,
-    	"", 100,99999,100},
-	{"mouse_pointer", NULL, 1000, -1000, 50, 50, "MP", 40, "LEFT", FIELD_SELECTION, FONT_FIELD_VALUE,
-    	"BLANK/LEFT/RIGHT/CROSSHAIR", 0,0,0},
+	{"reverse_scrolling", NULL, 1000, -1000, 50, 50, "RS", 40, "ON", FIELD_TOGGLE, FONT_FIELD_VALUE, "ON/OFF", 0,0,0},
+	{"tuning_acceleration", NULL, 1000, -1000, 50, 50, "TA", 40, "ON", FIELD_TOGGLE, FONT_FIELD_VALUE, "ON/OFF", 0,0,0},
+	{"tuning_accel_thresh1", NULL, 1000, -1000, 50, 50, "TAT1", 40, "10000", FIELD_NUMBER, FONT_FIELD_VALUE, "", 100,99999,100},
+	{"tuning_accel_thresh2", NULL, 1000, -1000, 50, 50, "TAT2", 40, "500", FIELD_NUMBER, FONT_FIELD_VALUE, "", 100,99999,100},
+	{"mouse_pointer", NULL, 1000, -1000, 50, 50, "MP", 40, "LEFT", FIELD_SELECTION, FONT_FIELD_VALUE, "BLANK/LEFT/RIGHT/CROSSHAIR", 0,0,0},
 
 
 	//moving global variables into fields 	
-	{"#vfo_a_freq", NULL, 1000, -1000, 50, 50, "VFOA", 40, "14000000", FIELD_NUMBER, FONT_FIELD_VALUE,
-    	"", 500000,30000000,1},
-	{"#vfo_b_freq", NULL, 1000, -1000, 50, 50, "VFOB", 40, "7000000", FIELD_NUMBER, FONT_FIELD_VALUE,
-    	"", 500000,30000000,1},
-	{"#rit_delta", NULL, 1000, -1000, 50, 50, "RIT_DELTA", 40, "000000", FIELD_NUMBER, FONT_FIELD_VALUE,
-    	"", -25000,25000,1},
-	{"#mycallsign", NULL, 1000, -1000, 400, 149, "MYCALLSIGN", 70, "NOBODY", FIELD_TEXT, FONT_SMALL, 
-		"", 3,10,1},
-	{"#mygrid", NULL, 1000, -1000, 400, 149, "MYGRID", 70, "NOWHERE", FIELD_TEXT, FONT_SMALL, 
-		"", 4,6,1},
-	{"#cwinput", NULL, 1000, -1000, 50, 50, "CW_INPUT", 40, "KEYBOARD", FIELD_SELECTION, FONT_FIELD_VALUE,
-		"KEYBOARD/IAMBIC/IAMBICB/STRAIGHT", 0,0,0},
-	{"#cwdelay", NULL, 1000, -1000, 50, 50, "CW_DELAY", 40, "300", FIELD_NUMBER, FONT_FIELD_VALUE,
-    	"", 50, 1000, 50},
-	{"#tx_pitch", NULL, 1000, -1000, 50, 50, "TX_PITCH", 40, "600", FIELD_NUMBER, FONT_FIELD_VALUE, 
-	    "", 300, 3000, 10},
-	{"sidetone", NULL, 1000, -1000, 50, 50, "SIDETONE", 40, "25", FIELD_NUMBER, FONT_FIELD_VALUE, 
-    "", 0, 100, 5},
-	{"#contact_callsign", NULL, 1000, -1000, 400, 149, "", 70, "NOBODY", FIELD_TEXT, FONT_SMALL, 
-		"", 3,10,1},
-	{"#sent_exchange", NULL, 1000, -1000, 400, 149, "", 70, "", FIELD_TEXT, FONT_SMALL, 
-		"", 0,10,1},
-	{"#contest_serial", NULL, 1000, -1000, 50, 50, "CONTEST_SERIAL", 40, "0", FIELD_NUMBER, FONT_FIELD_VALUE,
-    	"", 0,1000000,1},
-	{"#current_macro", NULL, 1000, -1000, 400, 149, "MACRO", 70, "", FIELD_TEXT, FONT_SMALL, 
-		"", 0,32,1},
-	{"#fwdpower", NULL, 1000, -1000, 50, 50, "POWER", 40, "300", FIELD_NUMBER, FONT_FIELD_VALUE,
-    	"", 0,10000,1},
-	{"#vswr", NULL, 1000, -1000, 50, 50, "REF", 40, "300", FIELD_NUMBER, FONT_FIELD_VALUE,
-    	"", 0,10000, 1},
-	{"bridge", NULL, 1000, -1000, 50, 50, "BRIDGE", 40, "100", FIELD_NUMBER, FONT_FIELD_VALUE,
-    	"", 10,100, 1},
+	{"#vfo_a_freq", NULL, 1000, -1000, 50, 50, "VFOA", 40, "14000000", FIELD_NUMBER, FONT_FIELD_VALUE, "", 500000,30000000,1},
+	{"#vfo_b_freq", NULL, 1000, -1000, 50, 50, "VFOB", 40, "7000000", FIELD_NUMBER, FONT_FIELD_VALUE, "", 500000,30000000,1},
+	{"#rit_delta", NULL, 1000, -1000, 50, 50, "RIT_DELTA", 40, "000000", FIELD_NUMBER, FONT_FIELD_VALUE, "", -25000,25000,1},
+	{"#mycallsign", NULL, 1000, -1000, 400, 149, "MYCALLSIGN", 70, "NOBODY", FIELD_TEXT, FONT_SMALL,  "", 3,10,1},
+	{"#mygrid", NULL, 1000, -1000, 400, 149, "MYGRID", 70, "NOWHERE", FIELD_TEXT, FONT_SMALL,  "", 4,6,1},
+	{"#cwinput", NULL, 1000, -1000, 50, 50, "CW_INPUT", 40, "KEYBOARD", FIELD_SELECTION, FONT_FIELD_VALUE, "KEYBOARD/IAMBIC/IAMBICB/STRAIGHT", 0,0,0},
+	{"#cwdelay", NULL, 1000, -1000, 50, 50, "CW_DELAY", 40, "300", FIELD_NUMBER, FONT_FIELD_VALUE, "", 50, 1000, 50},
+	{"#tx_pitch", NULL, 1000, -1000, 50, 50, "TX_PITCH", 40, "600", FIELD_NUMBER, FONT_FIELD_VALUE,  "", 300, 3000, 10},
+	{"sidetone", NULL, 1000, -1000, 50, 50, "SIDETONE", 40, "25", FIELD_NUMBER, FONT_FIELD_VALUE,  "", 0, 100, 5},
+	{"#contact_callsign", NULL, 1000, -1000, 400, 149, "", 70, "NOBODY", FIELD_TEXT, FONT_SMALL,  "", 3,10,1},
+	{"#sent_exchange", NULL, 1000, -1000, 400, 149, "", 70, "", FIELD_TEXT, FONT_SMALL,  "", 0,10,1},
+	{"#contest_serial", NULL, 1000, -1000, 50, 50, "CONTEST_SERIAL", 40, "0", FIELD_NUMBER, FONT_FIELD_VALUE, "", 0,1000000,1},
+	{"#current_macro", NULL, 1000, -1000, 400, 149, "MACRO", 70, "", FIELD_TEXT, FONT_SMALL,  "", 0,32,1},
+	{"#fwdpower", NULL, 1000, -1000, 50, 50, "POWER", 40, "300", FIELD_NUMBER, FONT_FIELD_VALUE, "", 0,10000,1},
+	{"#vswr", NULL, 1000, -1000, 50, 50, "REF", 40, "300", FIELD_NUMBER, FONT_FIELD_VALUE, "", 0,10000, 1},
+	{"bridge", NULL, 1000, -1000, 50, 50, "BRIDGE", 40, "100", FIELD_NUMBER, FONT_FIELD_VALUE, "", 10,100, 1},
 
 	// FT8 should be 4000 Hz
-	{"#bw_voice", NULL, 1000, -1000, 50, 50, "BW_VOICE", 40, "2200", FIELD_NUMBER, FONT_FIELD_VALUE,
-    	"", 300, 3000, 50},
-	{"#bw_cw", NULL, 1000, -1000, 50, 50, "BW_CW", 40, "400", FIELD_NUMBER, FONT_FIELD_VALUE,
-    	"", 300, 3000, 50},
-	{"#bw_digital", NULL, 1000, -1000, 50, 50, "BW_DIGITAL", 40, "3000", FIELD_NUMBER, FONT_FIELD_VALUE,
-    	"", 300, 3000, 50},
+	{"#bw_voice", NULL, 1000, -1000, 50, 50, "BW_VOICE", 40, "2200", FIELD_NUMBER, FONT_FIELD_VALUE, "", 300, 3000, 50},
+	{"#bw_cw", NULL, 1000, -1000, 50, 50, "BW_CW", 40, "400", FIELD_NUMBER, FONT_FIELD_VALUE, "", 300, 3000, 50},
+	{"#bw_digital", NULL, 1000, -1000, 50, 50, "BW_DIGITAL", 40, "3000", FIELD_NUMBER, FONT_FIELD_VALUE, "", 300, 3000, 50},
 
 	// FT8 controls
-	{"#ft8_auto", NULL, 1000, -1000, 50, 50, "FT8_AUTO", 40, "ON", FIELD_TOGGLE, FONT_FIELD_VALUE, 
-		"ON/OFF", 0,0,0},
-	{"#ft8_tx1st", NULL, 1000, -1000, 50, 50, "FT8_TX1ST", 40, "ON", FIELD_TOGGLE, FONT_FIELD_VALUE, 
-		"ON/OFF", 0,0,0},
-    {"#ft8_repeat", NULL, 1000, -1000, 50, 50, "FT8_REPEAT", 40, "5", FIELD_NUMBER, FONT_FIELD_VALUE,
-    	"", 1, 10, 1},
+	{"#ft8_auto", NULL, 1000, -1000, 50, 50, "FT8_AUTO", 40, "ON", FIELD_TOGGLE, FONT_FIELD_VALUE,  "ON/OFF", 0,0,0},
+	{"#ft8_tx1st", NULL, 1000, -1000, 50, 50, "FT8_TX1ST", 40, "ON", FIELD_TOGGLE, FONT_FIELD_VALUE,  "ON/OFF", 0,0,0},
+    {"#ft8_repeat", NULL, 1000, -1000, 50, 50, "FT8_REPEAT", 40, "5", FIELD_NUMBER, FONT_FIELD_VALUE, "", 1, 10, 1},
 	
-	{"#passkey", NULL, 1000, -1000, 400, 149, "PASSKEY", 70, "123", FIELD_TEXT, FONT_SMALL, 
-		"", 0,32,1},
-	{"#telneturl", NULL, 1000, -1000, 400, 149, "TELNETURL", 70, "dxc.nc7j.com:7373", FIELD_TEXT, FONT_SMALL, 
-		"", 0,32,1},
+	{"#passkey", NULL, 1000, -1000, 400, 149, "PASSKEY", 70, "123", FIELD_TEXT, FONT_SMALL,  "", 0,32,1},
+	{"#telneturl", NULL, 1000, -1000, 400, 149, "TELNETURL", 70, "dxc.nc7j.com:7373", FIELD_TEXT, FONT_SMALL, "", 0,32,1},
 
 
 	/* band stack registers */
-	{"#10m", NULL, 400, 330, 50, 50, "10M", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
-		"", 0,0,0},
-	{"#12m", NULL, 450, 330, 50, 50, "12M", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
-		"", 0,0,0},
-	{"#15m", NULL, 400, 380, 50, 50, "15M", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
-		"", 0,0,0},
-	{"#17m", NULL, 450, 380, 50, 50, "17M", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
-		"", 0,0,0},
-	{"#20m", NULL, 500, 380, 50, 50, "20M", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
-		"", 0,0,0},
-	{"#30m", NULL, 400, 430, 50, 50, "30M", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
-		"", 0,0,0},
-	{"#40m", NULL, 450, 430, 50, 50, "40M", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
-		"", 0,0,0},
-	{"#80m", NULL, 500, 430, 50, 50, "80M", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
-		"", 0,0,0},
+	{"#10m", NULL, 400, 330, 50, 50, "10M", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE,  "", 0,0,0},
+	{"#12m", NULL, 450, 330, 50, 50, "12M", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE,  "", 0,0,0},
+	{"#15m", NULL, 400, 380, 50, 50, "15M", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE,  "", 0,0,0},
+	{"#17m", NULL, 450, 380, 50, 50, "17M", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE,  "", 0,0,0},
+	{"#20m", NULL, 500, 380, 50, 50, "20M", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE,  "", 0,0,0},
+	{"#30m", NULL, 400, 430, 50, 50, "30M", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE,  "", 0,0,0},
+	{"#40m", NULL, 450, 430, 50, 50, "40M", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE,  "", 0,0,0},
+	{"#80m", NULL, 500, 430, 50, 50, "80M", 1, "", FIELD_BUTTON, FONT_FIELD_VALUE,  "", 0,0,0},
 
 	// soft keyboard
 	{"#kbd_q", do_kbd, 0, 360 ,40, 30, "#", 1, "q", FIELD_BUTTON, FONT_FIELD_VALUE,"", 0,0,0}, 

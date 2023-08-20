@@ -126,18 +126,20 @@ static inline double const cnrm(const complex double x){
 
 #define MAX_MODES 11 
 
-#define MODE_USB 0
-#define MODE_LSB 1
-#define MODE_CW 2
-#define MODE_CWR 3
-#define MODE_NBFM 4 
-#define MODE_AM 5 
-#define MODE_FT8 6  
-#define MODE_PSK31 7 
-#define MODE_RTTY 8 
-#define MODE_DIGITAL 9 
-#define MODE_2TONE 10 
-#define MODE_CALIBRATE 11 
+enum {
+    MODE_USB,
+    MODE_LSB,
+    MODE_CW,
+    MODE_CWR,
+    MODE_NBFM,
+    MODE_AM,
+    MODE_FT8,
+    MODE_PSK31,
+    MODE_RTTY,
+    MODE_DIGITAL,
+    MODE_2TONE,
+    MODE_CALIBRATE
+};
 
 struct rx {
 	long tuned_bin;	// tuned bin (this should translate to freq) 
@@ -191,9 +193,12 @@ void ft8_interpret(char *received, char *transmit);
 
 int is_in_tx();
 
-#define TX_OFF 0
-#define TX_PTT 1
-#define TX_SOFT 2 
+enum {
+    TX_OFF,
+    TX_PTT,
+    TX_SOFT
+};
+
 void tx_on(int trigger);
 void tx_off();
 long get_freq();
