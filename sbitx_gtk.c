@@ -39,11 +39,7 @@ The initial sync between the gui values, the core radio values, settings, et al 
 #include "ini.h"
 #include "hamlib.h"
 #include "remote.h"
-#ifndef N8ME
-#include "wsjtx.h"
-#endif
 #include "i2cbb.h"
-#include "webserver.h"
 #include "logbook.h"
 #include "queue.h"
 
@@ -3637,7 +3633,6 @@ static void ui_init(int argc, char *argv[]){
 	gtk_window_fullscreen(GTK_WINDOW(window));
 	#endif
 	focus_field(get_field("r1:volume"));
-	webserver_start();
 }
 
 /* handle modem callbacks for more data */
@@ -4351,18 +4346,6 @@ int main( int argc, char* argv[] ) {
 	hamlib_start();
 	remote_start();
 
-	#ifndef N8ME
-	printf("Reading rtc...");
-	rtc_read();
-	printf("done!\n");
-	#endif
-
-	#ifndef N8ME
-	open_url("http://127.0.0.1:8080");
-	#endif
-	// execute_app("chromium-browser --log-leve=3 "
-	//	"--enable-features=OverlayScrollbar http://127.0.0.1:8080"
-	//	"  &>/dev/null &");
 	gtk_main();
   
 	return 0;
