@@ -483,9 +483,6 @@ struct field main_controls[] = {
 	{"rx_pitch", do_pitch, 700, 380, 50, 50, "PITCH", 40, "600", FIELD_NUMBER, FONT_FIELD_VALUE, 
 		"", 100, 3000, 10},
 	
-	{"#web", NULL, 600, 430, 50, 50, "WEB", 40, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
-		"", 0,0, 0},
-
 	{"#tx", NULL, 1000, -1000, 50, 50, "TX", 40, "", FIELD_BUTTON, FONT_FIELD_VALUE, 
 		"RX/TX", 0,0, 0},
 
@@ -3824,8 +3821,6 @@ void do_cmd(char *cmd){
 	else if (!strcmp(request, "#tx")){	
 		tx_on(TX_SOFT);
 	}
-	else if (!strcmp(request, "#web"))
-		open_url("http://127.0.0.1:8080");
 	else if (!strcmp(request, "#rx")){
 		tx_off();
 	}
