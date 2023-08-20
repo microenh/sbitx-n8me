@@ -18,77 +18,77 @@ static void rect(cairo_t *gfx, int x, int y, int w, int h, int color, int thickn
 void do_cmd(char *cmd);  // hamlib.c
 static void cmd_exec(char *cmd);
 static int do_spectrum(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_waterfall(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_tuning(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_text(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_status(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_console(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_pitch(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_kbd(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_mouse_move(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_macro(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_record(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-struct field *get_field(const char *cmd);
-void update_field(struct field *f);
-struct field *get_field(const char *cmd){
-struct field *get_field_by_label(char *label){
-int get_field_value(char *cmd, char *value){
-int get_field_value_by_label(char *label, char *value){
-int remote_update_field(int i, char *text){
-int set_field(char *id, char *value){
-void console_init(){
-void web_add_string(char *string){
-void  web_write(int style, char *data){
-int console_init_next_line(){
-void write_to_remote_app(int style, char *text){
-void write_console(int style, char *text){
-void draw_log(cairo_t *gfx, struct field *f){
-void draw_field(GtkWidget *widget, cairo_t *gfx, struct field *f){
+static int do_waterfall(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+static int do_tuning(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+static int do_text(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+static int do_status(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+static int do_console(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+static int do_pitch(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+static int do_kbd(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+// static int do_mouse_move(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+static int do_macro(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+static int do_record(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+static struct field *get_field(const char *cmd);
+static void update_field(struct field *f);
+static struct field *get_field(const char *cmd){
+static struct field *get_field_by_label(char *label){
+int get_field_value(char *cmd, char *value){    // logbook.c, modem_ft8.c, telnet.c, webserver.c
+int get_field_value_by_label(char *label, char *value){ // modems.c, remote.c
+int remote_update_field(int i, char *text){ //webserver.c
+int set_field(char *id, char *value){ // macros.c, modem_ft8.c webserver.c
+static void console_init(){
+static void web_add_string(char *string){
+static void  web_write(int style, char *data){
+static int console_init_next_line(){
+static void write_to_remote_app(int style, char *text){
+void write_console(int style, char *text){  // macros.c, modem_ft8.c, modems.c, telnet.c
+static void draw_log(cairo_t *gfx, struct field *f){
+static void draw_field(GtkWidget *widget, cairo_t *gfx, struct field *f){
 static void scale_ui(){
 static int mode_id(char *mode_str){
 static void save_user_settings(int forced){
 static int user_settings_handler(void* user, const char* section, const char* name, const char* value) {
-void sdr_modulation_update(int32_t *samples, int count, double scale_up){
-void draw_modulation(struct field *f, cairo_t *gfx){
-void init_waterfall(){
-void draw_waterfall(struct field *f, cairo_t *gfx){
-void draw_spectrum_grid(struct field *f_spectrum, cairo_t *gfx){
-void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
-int waterfall_fn(struct field *f, cairo_t *gfx, int event, int a, int b){
-char* freq_with_separators(char* freq_str){
-void draw_dial(struct field *f, cairo_t *gfx){
-void invalidate_rect(int x, int y, int width, int height){
-void redraw_main_screen(GtkWidget *widget, cairo_t *gfx){
+void sdr_modulation_update(int32_t *samples, int count, double scale_up){   //sbitx.c
+static void draw_modulation(struct field *f, cairo_t *gfx){
+static void init_waterfall(){
+static void draw_waterfall(struct field *f, cairo_t *gfx){
+static void draw_spectrum_grid(struct field *f_spectrum, cairo_t *gfx){
+static void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
+static int waterfall_fn(struct field *f, cairo_t *gfx, int event, int a, int b){
+static char* freq_with_separators(char* freq_str){
+static void draw_dial(struct field *f, cairo_t *gfx){
+static void invalidate_rect(int x, int y, int width, int height){
+static void redraw_main_screen(GtkWidget *widget, cairo_t *gfx){
 static gboolean on_draw_event( GtkWidget* widget, cairo_t *cr, gpointer user_data ) {
 static gboolean on_resize(GtkWidget *widget, GdkEventConfigure *event, gpointer user_data) {
-void update_field(struct field *f){
+static void update_field(struct field *f){
 static void hover_field(struct field *f){
 static void edit_field(struct field *f, int action){
 static void focus_field(struct field *f){
-time_t time_sbitx(){
-void set_operating_freq(int dial_freq, char *response){
-void abort_tx(){
+time_t time_sbitx(){    // logbook.c, modem_ft8.c, modems.c, 
+static void set_operating_freq(int dial_freq, char *response){
+void abort_tx(){    // modems.c
 static int do_spectrum(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
-int do_waterfall(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
-void remote_execute(char *cmd){
-void call_wipe(){
-void update_log_ed(){
-int do_console(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
-int do_status(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
-void execute_app(char *app){
-int do_text(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
-int do_pitch(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
-int do_tuning(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
-int do_kbd(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
-void write_call_log(){
-void interpret_log(char *text){
-void macro_get_var(char *var, char *s){
-void open_url(char *url){
-void qrz(char *callsign){
-int do_macro(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
-int do_record(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
-void tx_on(int trigger){
-void tx_off(){
+static int do_waterfall(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+void remote_execute(char *cmd){ // remote.c, webserver.c
+static void call_wipe(){
+static void update_log_ed(){
+static int do_console(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+static int do_status(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+static void execute_app(char *app){
+static int do_text(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+static int do_pitch(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+static int do_tuning(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+static int do_kbd(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+static void write_call_log(){
+static void interpret_log(char *text){
+void macro_get_var(char *var, char *s){ // macros.d
+static void open_url(char *url){
+static void qrz(char *callsign){
+static int do_macro(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+static int do_record(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+void tx_on(int trigger){    // hamlib.c, modems.c, sbitx.c
+void tx_off(){  // modems.c
 static int layout_handler(void* user, const char* section, const char* name, const char* value) {
 static void set_ui(int id){
 static void cw_key(int state){
@@ -99,37 +99,37 @@ static gboolean on_window_state (GtkWidget *widget, GdkEventKey *event, gpointer
 static gboolean on_mouse_release (GtkWidget *widget, GdkEventButton *event, gpointer data) {
 static gboolean on_mouse_move (GtkWidget *widget, GdkEventButton *event, gpointer data) {
 static gboolean on_mouse_press (GtkWidget *widget, GdkEventButton *event, gpointer data) {
-void redraw(){
-int key_poll(){
-void enc_init(struct encoder *e, int speed, int pin_a, int pin_b){
-int enc_state (struct encoder *e) {
-int enc_read(struct encoder *e) {
+static void redraw(){
+int key_poll(){ modems.c
+static void enc_init(struct encoder *e, int speed, int pin_a, int pin_b){
+static int enc_state (struct encoder *e) {
+static int enc_read(struct encoder *e) {
 static void tuning_isr(void){
-void query_swr(){
-void hw_init(){
-void hamlib_tx(int tx_input){
-int get_cw_delay(){
-int get_cw_input_method(){
-int get_pitch(){
-int get_cw_tx_pitch(){
-int get_data_delay(){
-int get_wpm(){
-long get_freq(){
+static void query_swr(){
+static void hw_init(){
+void hamlib_tx(int tx_input){   // hamlib.c
+int get_cw_delay(){ // modems.c
+int get_cw_input_method(){  // modems.c
+int get_pitch(){    // modems.c
+int get_cw_tx_pitch(){  // modem_ft8.c
+static int get_data_delay(){
+int get_wpm(){  // modems.c
+long get_freq(){    // hamlib.c
 static oid set_bandwidth(int hz){
-void set_mode(char *mode){
-void get_mode(char *mode){
-void bin_dump(int length, uint8_t *data){
-int  web_get_console(char *buff, int max){
-void web_get_spectrum(char *buff){
+static void set_mode(char *mode){
+static void get_mode(char *mode){
+static void bin_dump(int length, uint8_t *data){
+int  web_get_console(char *buff, int max){  // webserver.c
+void web_get_spectrum(char *buff){  // webserver.c
 static gboolean ui_tick(gpointer gook){
-void ui_init(int argc, char *argv[]){
-int get_tx_data_byte(char *c){
-int get_tx_data_length(){
-int is_in_tx(){
-void change_band(char *request){
-void meter_calibrate(){
-void do_cmd(char *cmd){	
-void enter_qso(char *args){
+static void ui_init(int argc, char *argv[]){
+int get_tx_data_byte(char *c){  // modems.c
+int get_tx_data_length(){   // modems.c
+int is_in_tx(){ // modems.c
+static void change_band(char *request){
+static void meter_calibrate(){
+void do_cmd(char *cmd){	    // hamlib.c
+static void enter_qso(char *args){
 static void cmd_exec(char *cmd){
-void ensure_single_instance(){
+static void ensure_single_instance(){
 int main( int argc, char* argv[] ) {

@@ -267,6 +267,8 @@ static gboolean on_resize(GtkWidget *widget, GdkEventConfigure *event,
 	gpointer user_data);
 static gboolean ui_tick(gpointer gook);
 
+static void update_log_ed();
+
 static int measure_text(cairo_t *gfx, char *text, int font_entry){
 	cairo_text_extents_t ext;
 	struct font_style *s = font_table + font_entry;
@@ -430,16 +432,16 @@ void do_cmd(char *cmd);
 static void cmd_exec(char *cmd);
 
 static int do_spectrum(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_waterfall(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_tuning(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_text(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_status(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_console(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_pitch(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_kbd(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_mouse_move(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_macro(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
-int do_record(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+static int do_waterfall(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+static int do_tuning(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+static int do_text(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+static int do_status(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+static int do_console(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+static int do_pitch(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+static int do_kbd(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+// static int do_mouse_move(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+static int do_macro(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+static int do_record(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
 
 struct field *active_layout = NULL;
 char settings_updated = 0;
@@ -681,8 +683,8 @@ struct field main_controls[] = {
 };
 
 
-struct field *get_field(const char *cmd);
-void update_field(struct field *f);
+static struct field *get_field(const char *cmd);
+static void update_field(struct field *f);
 #ifndef N8ME
 void tx_on();
 void tx_off();
@@ -692,14 +694,14 @@ void tx_off();
 // char *console_lines[MAX_CONSOLE_LINES];
 int last_log = 0;
 
-struct field *get_field(const char *cmd){
+static struct field *get_field(const char *cmd){
 	for (int i = 0; active_layout[i].cmd[0] > 0; i++)
 		if (!strcmp(active_layout[i].cmd, cmd))
 			return active_layout + i;
 	return NULL;
 }
 
-struct field *get_field_by_label(char *label){
+static struct field *get_field_by_label(char *label){
 	for (int i = 0; active_layout[i].cmd[0] > 0; i++)
 		if (!strcasecmp(active_layout[i].label, label))
 			return active_layout + i;
@@ -830,7 +832,7 @@ int set_field(char *id, char *value){
 // log is a special field that essentially is a like text
 // on a terminal
 
-void console_init(){
+static void console_init(){
 	for (int i =0;  i < MAX_CONSOLE_LINES; i++){
 		console_stream[i].text[0] = 0;
 		console_stream[i].style = console_style;
@@ -839,13 +841,13 @@ void console_init(){
 	f->is_dirty = 1;
 }
 
-void web_add_string(char *string){
+static void web_add_string(char *string){
 	while (*string){
 		q_write(&q_web, *string++);
 	}
 }
 
-void  web_write(int style, char *data){
+static void  web_write(int style, char *data){
 	char tag[20];
 
 	switch(style){
@@ -928,7 +930,7 @@ void  web_write(int style, char *data){
 	web_add_string(">");
 }
 
-int console_init_next_line(){
+static int console_init_next_line(){
 	console_current_line++;
 	if (console_current_line == MAX_CONSOLE_LINES)
 		console_current_line = console_style;
@@ -937,7 +939,7 @@ int console_init_next_line(){
 	return console_current_line;
 }
 
-void write_to_remote_app(int style, char *text){
+static void write_to_remote_app(int style, char *text){
 	if (style == FONT_FLDIGI_RX)
 		return; //this is temporary
 	remote_write("{");
@@ -1013,7 +1015,7 @@ void write_console(int style, char *text){
 		f->is_dirty = 1;
 }
 
-void draw_log(cairo_t *gfx, struct field *f){
+static void draw_log(cairo_t *gfx, struct field *f){
 	char this_line[1000];
 	int line_height = font_table[f->font_index].height; 	
 	int n_lines = (f->height / line_height) - 1;
@@ -1040,7 +1042,7 @@ void draw_log(cairo_t *gfx, struct field *f){
 	}
 }
 
-void draw_field(GtkWidget *widget, cairo_t *gfx, struct field *f){
+static void draw_field(GtkWidget *widget, cairo_t *gfx, struct field *f){
 	struct font_style *s = font_table + 0;
 
 	// push this to the web as well
@@ -1309,7 +1311,7 @@ void sdr_modulation_update(int32_t *samples, int count, double scale_up){
 	}
 }
 
-void draw_modulation(struct field *f, cairo_t *gfx){
+static void draw_modulation(struct field *f, cairo_t *gfx){
 
 	int y, sub_division, i, grid_height;
 	long	freq, freq_div;
@@ -1361,7 +1363,7 @@ static int  *wf;
 GdkPixbuf *waterfall_pixbuf = NULL;
 guint8 *waterfall_map;
 
-void init_waterfall(){
+static void init_waterfall(){
 	struct field *f = get_field("waterfall");
 
 	// this will store the db values of waterfall
@@ -1393,7 +1395,7 @@ void init_waterfall(){
 }
 
 
-void draw_waterfall(struct field *f, cairo_t *gfx){
+static void draw_waterfall(struct field *f, cairo_t *gfx){
 
 	memmove(waterfall_map + f->width * 3, waterfall_map, 
 		f->width * (f->height - 1) * 3);
@@ -1436,7 +1438,7 @@ void draw_waterfall(struct field *f, cairo_t *gfx){
 	cairo_fill(gfx);
 }
 
-void draw_spectrum_grid(struct field *f_spectrum, cairo_t *gfx){
+static void draw_spectrum_grid(struct field *f_spectrum, cairo_t *gfx){
 	int sub_division, grid_height;
 	struct field *f = f_spectrum;
 
@@ -1467,7 +1469,7 @@ void draw_spectrum_grid(struct field *f_spectrum, cairo_t *gfx){
 	cairo_stroke(gfx);
 }
 
-void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
+static void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 	int y, sub_division, i, grid_height, bw_high, bw_low, pitch;
 	float span;
 	struct field *f;
@@ -1606,7 +1608,7 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 	draw_waterfall(get_field("waterfall"), gfx);
 }
 
-int waterfall_fn(struct field *f, cairo_t *gfx, int event, int a, int b){
+static int waterfall_fn(struct field *f, cairo_t *gfx, int event, int a, int b){
 	if(f->fn(f, gfx, FIELD_DRAW, -1, -1, 0))
 		switch(FIELD_DRAW){
 			case FIELD_DRAW:
@@ -1615,7 +1617,7 @@ int waterfall_fn(struct field *f, cairo_t *gfx, int event, int a, int b){
 		}
 }
 
-char* freq_with_separators(char* freq_str){
+static char* freq_with_separators(char* freq_str){
 
 	int freq = atoi(freq_str);
 	int f_mhz, f_khz, f_hz;
@@ -1649,7 +1651,7 @@ char* freq_with_separators(char* freq_str){
 	return return_string;
 }
 
-void draw_dial(struct field *f, cairo_t *gfx){
+static void draw_dial(struct field *f, cairo_t *gfx){
 	struct font_style *s = font_table + 0;
 	struct field *rit = get_field("#rit");
 	struct field *split = get_field("#split");
@@ -1741,13 +1743,13 @@ void draw_dial(struct field *f, cairo_t *gfx){
 	}
 }
 
-void invalidate_rect(int x, int y, int width, int height){
+static void invalidate_rect(int x, int y, int width, int height){
 	if (display_area){
 		gtk_widget_queue_draw_area(display_area, x, y, width, height);
 	}
 }
 
-void redraw_main_screen(GtkWidget *widget, cairo_t *gfx){
+static void redraw_main_screen(GtkWidget *widget, cairo_t *gfx){
 	double dx1, dy1, dx2, dy2;
 	int x1, y1, x2, y2;
 
@@ -1789,7 +1791,7 @@ static gboolean on_resize(GtkWidget *widget, GdkEventConfigure *event, gpointer 
 	screen_height = event->height;
 }
 
-void update_field(struct field *f){
+static void update_field(struct field *f){
 	if (f->y >= 0)
 		f->is_dirty = 1;
 	f->update_remote = 1;
@@ -1938,7 +1940,7 @@ time_t time_sbitx(){
 
 // setting the frequency is complicated by having to take care of the
 // rit/split and power levels associated with each frequency
-void set_operating_freq(int dial_freq, char *response){
+static void set_operating_freq(int dial_freq, char *response){
 	struct field *rit = get_field("#rit");
 	struct field *split = get_field("#split");
 	struct field *vfo_a = get_field("#vfo_a_freq");
@@ -2020,7 +2022,7 @@ static int do_spectrum(struct field *f, cairo_t *gfx, int event, int a, int b, i
 	return 0;	
 }
 
-int do_waterfall(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+static int do_waterfall(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 	switch(event){
 		case FIELD_DRAW:
 			draw_waterfall(f, gfx);
@@ -2051,7 +2053,7 @@ void remote_execute(char *cmd){
 	q_write(&q_remote_commands, 0);
 }
 
-void call_wipe(){
+static void call_wipe(){
 	contact_callsign[0] = 0;
 	contact_grid[0] = 0;
 	received_rst[0] = 0;
@@ -2060,7 +2062,7 @@ void call_wipe(){
 	update_log_ed();
 }
 
-void update_log_ed(){
+static void update_log_ed(){
 	struct field *f = get_field("#log_ed");
 	struct field *f_sent_exchange = get_field("#sent_exchange");
 
@@ -2105,7 +2107,7 @@ void update_log_ed(){
 }
 
 
-int do_console(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+static int do_console(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 	char buff[100], *p, *q;
 
 	int line_height = font_table[f->font_index].height; 	
@@ -2139,7 +2141,7 @@ int do_console(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 	return 0;	
 }
 
-int do_status(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+static int do_status(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 	char buff[100];
 
 	if (event == FIELD_DRAW){
@@ -2166,7 +2168,7 @@ int do_status(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 	return 0;
 }
 
-void execute_app(char *app){
+static void execute_app(char *app){
 	char buff[1000];
 
 	sprintf(buff, "%s 0> /dev/null", app); 
@@ -2177,7 +2179,7 @@ void execute_app(char *app){
 	}
 }
 
-int do_text(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+static int do_text(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 	int width, offset, text_length, line_start, y;	
 	char this_line[MAX_FIELD_LENGTH];
 	int text_line_width = 0;
@@ -2234,7 +2236,7 @@ int do_text(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 }
 
 
-int do_pitch(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+static int do_pitch(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 
 	int	v = atoi(f->value);
 
@@ -2272,7 +2274,7 @@ int do_pitch(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 }
 
 //called for RIT as well as the main tuning
-int do_tuning(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+static int do_tuning(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 
 	static struct timespec last_change_time, this_change_time;
 
@@ -2357,7 +2359,7 @@ int do_tuning(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 	return 0;	
 }
 
-int do_kbd(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+static int do_kbd(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 	if(event == GDK_BUTTON_PRESS){
 		struct field *f_text = get_field("#text_in");
 		if (!strcmp(f->cmd, "#kbd_macro"))
@@ -2374,7 +2376,7 @@ int do_kbd(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 	return 0;
 }
 
-void write_call_log(){
+static void write_call_log(){
 	struct field *f_sent_exchange = get_field("#sent_exchange");
 
 	logbook_add(contact_callsign, sent_rst, f_sent_exchange->value, received_rst, received_exchange); 
@@ -2402,7 +2404,7 @@ void write_call_log(){
 
 // this interprets the log being filled in bits and pieces in the following order
 // callsign, sent rst, received rst and exchange
-void interpret_log(char *text){
+static void interpret_log(char *text){
 	int i, j;
 	char *p, *q;
 	int mode = mode_id(get_field("r1:mode")->value);
@@ -2493,7 +2495,7 @@ void macro_get_var(char *var, char *s){
 		*s = 0;
 }
 
-void open_url(char *url){
+static void open_url(char *url){
 	char temp_line[200];
 
 	sprintf(temp_line, "chromium-browser --log-leve=3 "
@@ -2502,14 +2504,14 @@ void open_url(char *url){
 	execute_app(temp_line);
 }
 
-void qrz(char *callsign){
+static void qrz(char *callsign){
 	char url[1000];
 
 	sprintf(url, "https://qrz.com/DB/%s &", callsign);
 	open_url(url);
 }
 
-int do_macro(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+static int do_macro(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 	char buff[256], *mode;
 
 	if(event == GDK_BUTTON_PRESS){
@@ -2572,7 +2574,7 @@ int do_macro(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 	return 0;
 }
 
-int do_record(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
+static int do_record(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 	if (event == FIELD_DRAW){
 
 		if (f_focus == f)
@@ -2963,7 +2965,7 @@ is posted a redraw signal that in turn triggers the redraw_all routine.
 Don't ask me, I only work around here.
 */
 
-void redraw(){
+static void redraw(){
 	struct field *f;
 	f = get_field("#console");
 	f->is_dirty = 1;
@@ -3114,18 +3116,18 @@ int key_poll(){
 	return key;
 }
 
-void enc_init(struct encoder *e, int speed, int pin_a, int pin_b){
+static void enc_init(struct encoder *e, int speed, int pin_a, int pin_b){
 	e->pin_a = pin_a;
 	e->pin_b = pin_b;
 	e->speed = speed;
 	e->history = 5;
 }
 
-int enc_state (struct encoder *e) {
+static int enc_state (struct encoder *e) {
 	return (digitalRead(e->pin_a) ? 1 : 0) + (digitalRead(e->pin_b) ? 2: 0);
 }
 
-int enc_read(struct encoder *e) {
+static int enc_read(struct encoder *e) {
 	int result = 0; 
 	int newState;
   
@@ -3173,7 +3175,7 @@ static void tuning_isr(void){
 		tuning_ticks--;	
 }
 
-void query_swr(){
+static void query_swr(){
 	uint8_t response[4];
 	int16_t vfwd, vref;
 	int  vswr;
@@ -3198,7 +3200,7 @@ void query_swr(){
 	set_field("#vswr", buff);
 }
 
-void hw_init(){
+static void hw_init(){
 	wiringPiSetup();
 	#ifndef N8ME
 	init_gpio_pins();
@@ -3310,7 +3312,7 @@ static void set_bandwidth(int hz){
 	set_field("r1:high", buff);
 }
 
-void set_mode(char *mode){
+static void set_mode(char *mode){
 	struct field *f = get_field("r1:mode");
 	char umode[10], bw_str[10];
 	int i;
@@ -3344,13 +3346,13 @@ void set_mode(char *mode){
 		write_console(FONT_LOG, "%s is not a mode\n");
 }
 
-void get_mode(char *mode){
+static void get_mode(char *mode){
 	struct field *f = get_field("r1:mode");
 	strcpy(mode, f->value);
 }
 
 
-void bin_dump(int length, uint8_t *data){
+static void bin_dump(int length, uint8_t *data){
 	printf("i2c: ");
 	for (int i = 0; i < length; i++)
 		printf("%x ", data[i]);
@@ -3571,7 +3573,7 @@ static gboolean ui_tick(gpointer gook){
 	return TRUE;
 }
 
-void ui_init(int argc, char *argv[]){
+static void ui_init(int argc, char *argv[]){
  
 	gtk_init( &argc, &argv );
 
@@ -3677,7 +3679,7 @@ int is_in_tx(){
 
 /* handle the ui request and update the controls */
 
-void change_band(char *request){
+static void change_band(char *request){
 	int i, old_band, new_band; 
 	int max_bands = sizeof(band_stack)/sizeof(struct band);
 	long new_freq, old_freq;
@@ -3795,7 +3797,7 @@ void utc_set(char *args, int update_rtc){
 #endif
 
 
-void meter_calibrate(){
+static void meter_calibrate(){
 	//we change to 40 meters, cw
 	printf("starting meter calibration\n"
 	"1. Attach a power meter and a dummy load to the antenna\n"
@@ -3933,7 +3935,7 @@ void do_cmd(char *cmd){
 	}
 }
 
-void enter_qso(char *args){
+static void enter_qso(char *args){
 	char contact_callsign[20];
 	char rst_sent[10];
 	char exchange_sent[10];
@@ -4242,7 +4244,7 @@ static void cmd_exec(char *cmd){
 }
 
 // From https://stackoverflow.com/questions/5339200/how-to-create-a-single-instance-application-in-c-or-c
-void ensure_single_instance(){
+static void ensure_single_instance(){
 	int pid_file = open("/tmp/sbitx.pid", O_CREAT | O_RDWR, 0666);
 	int rc = flock(pid_file, LOCK_EX | LOCK_NB);
 	if(rc) {

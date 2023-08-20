@@ -1,7 +1,6 @@
 void setup();
 void loop();
 void display();
-void redraw();
 void key_pressed(char c);
 int set_field(char *id, char *value);
 int get_field_value(char *id, char *value);
@@ -38,8 +37,6 @@ int macro_exec(int key, char *dest);
 void macro_label(int fn_key, char *label);
 void macro_list(char *output);
 void macro_get_keys(char *output);
-void update_log_ed();
-void write_call_log();
 time_t time_sbitx();
 
 #define VER_STR "sbitx v2.0 - N8ME"
