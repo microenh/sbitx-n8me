@@ -45,6 +45,7 @@ The initial sync between the gui values, the core radio values, settings, et al 
 #include "i2cbb.h"
 #include "webserver.h"
 #include "logbook.h"
+#include "queue.h"
 
 /* command  buffer for commands received from the remote */
 struct Queue q_remote_commands;

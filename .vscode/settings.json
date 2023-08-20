@@ -4,7 +4,8 @@
     "file.h": "c",
     "fcntl.h": "c",
     "unistd.h": "c",
-    "stdio.h": "c"
+    "stdio.h": "c",
+    "complex.h": "c"
   },
   "cmake.buildDirectory": "${workspaceFolder}/builder",
   "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",

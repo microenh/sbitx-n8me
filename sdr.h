@@ -60,24 +60,6 @@ have continuos waveform.
 
 */
 
-struct Queue
-{
-  int id;
-  int head;
-  int tail;
-  int  stall;
-	int *data;
-	unsigned int underflow;
-	unsigned int overflow;
-	unsigned int max_q;
-};
-
-void q_init(struct Queue *p, int32_t length);
-int q_length(struct Queue *p);
-int32_t q_read(struct Queue *p);
-int q_write(struct Queue *p, int w);
-void q_empty(struct Queue *p);
-
 #define MAX_BINS 2048
 
 /*
@@ -96,6 +78,8 @@ to baseband.
 Each tx is also based on a struct rx but it is used to describe and hold state
 for the transmission. The data required is the same!
 */
+
+#include <complex.h>
 
 extern float fft_bins[];
 extern int spectrum_plot[];
@@ -132,10 +116,10 @@ void filter_print(struct filter *f);
 
 // Complex norm (sum of squares of real and imaginary parts)
 static inline float const cnrmf(const complex float x){
-  return crealf(x)*crealf(x) + cimagf(x) * cimagf(x);
+	return crealf(x)*crealf(x) + cimagf(x) * cimagf(x);
 }
 static inline double const cnrm(const complex double x){
-  return creal(x)*creal(x) + cimag(x) * cimag(x);
+	return creal(x)*creal(x) + cimag(x) * cimag(x);
 }
 
 #define power2dB(x) (10*log10f(x))
@@ -156,9 +140,9 @@ static inline double const cnrm(const complex double x){
 #define MODE_CALIBRATE 11 
 
 struct rx {
-	long tuned_bin;					//tuned bin (this should translate to freq) 
-	short mode;							//USB/LSB/AM/FM (cw is narrow SSB, so not listed)
-													//FFT plan to convert back to time domain
+	long tuned_bin;	// tuned bin (this should translate to freq) 
+	short mode;		// USB/LSB/AM/FM (cw is narrow SSB, so not listed)
+					// FFT plan to convert back to time domain
 	int low_hz; 
 	int high_hz;
 	fftw_plan plan_rev;
@@ -166,29 +150,28 @@ struct rx {
 	fftw_complex *fft_time;
 
 	/*
-    * agc() is called once for every block of samples. The samples
-    are in time-domain. Consider each call to agc as a 'tick'.
-    * agc_speed is the max ticks that the agc will hang for
-    * agc_loop tracks how many more ticks to go before the decay
-    * agc_decay rate sets the slope for agc decay.
-  */
-  int agc_speed;
+	* agc() is called once for every block of samples. The samples
+	* are in time-domain. Consider each call to agc as a 'tick'.
+	* agc_speed is the max ticks that the agc will hang for
+	* agc_loop tracks how many more ticks to go before the decay
+	* agc_decay rate sets the slope for agc decay.
+	*/
+	int agc_speed;
 	int agc_threshold;
 	int agc_loop;
 	double signal_strength;
 	double agc_gain;
-  int agc_decay_rate;
-  double signal_avg;
-	
-	struct filter *filter;	//convolution filter
-	int output;							//-1 = nowhere, 0 = audio, rest is a tcp socket
+	int agc_decay_rate;
+	double signal_avg;
+
+	struct filter *filter;	// convolution filter
+	int output;				// -1 = nowhere, 0 = audio, rest is a tcp socket
 	struct rx* next;
 };
 
 extern struct rx *rx_list;
 extern int freq_hdr;
 
-void set_lo(int frequency);
 void set_volume(double v);
 void sdr_request(char *request, char *response);
 
@@ -196,7 +179,7 @@ void sdr_modulation_update(int32_t *samples, int count, double scale_up);
 
 /* from modems.c */
 void modem_rx(int mode, int32_t *samples, int count);
-void	modem_set_pitch(int pitch);
+void modem_set_pitch(int pitch);
 void modem_init();
 int get_tx_data_byte(char *c);
 int	get_tx_data_length();
@@ -218,7 +201,7 @@ int get_pitch();
 void do_cmd(char *cmd);
 time_t time_sbitx();
 
-//cw defines, these are bitfields, hence, powers of 2
+// cw defines, these are bitfields, hence, powers of 2
 #define CW_IDLE (0)
 #define CW_DASH (1) 
 #define CW_DOT (2) 
@@ -227,7 +210,7 @@ time_t time_sbitx();
 #define CW_WORD_DELAY (16) 
 #define CW_DOWN (32) 
 
-//straight key, iambic, keyboard
+// straight key, iambic, keyboard
 #define CW_STRAIGHT 0
 #define CW_IAMBIC	1
 #define CW_IAMBICB 2	
@@ -235,7 +218,6 @@ time_t time_sbitx();
 
 
 int key_poll();
-int key_poll2();
 int get_cw_delay();
 int get_cw_input_method();
 int get_cw_tx_pitch();

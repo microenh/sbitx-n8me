@@ -1,7 +1,5 @@
 void setup();
 void loop();
-void display();
-void key_pressed(char c);
 int set_field(char *id, char *value);
 int get_field_value(char *id, char *value);
 int get_field_value_by_label(char *label, char *value);

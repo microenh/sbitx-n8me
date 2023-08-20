@@ -4,7 +4,10 @@
 #include <fftw3.h>
 #include <string.h>
 #include "sdr.h"
-/**
+
+#include "queue.h"
+
+/*
  * Audio sampling queues for playback and recording
  */
 
@@ -12,20 +15,22 @@ void q_empty(struct Queue *p){
   p->head = 0;
   p->tail = 0;
   p->stall = 1;
-	p->underflow = 0;
-	p->overflow = 0;
+  p->underflow = 0;
+  p->overflow = 0;
 }
 
-void q_init(struct Queue *p, int length){
-  /* p->head = 0;
-  p->tail = 0;
-  p->stall = 1;
-	p->underflow = 0;
-	p->overflow = 0;*/
-	p->max_q = length;
-	p->data = malloc((length+1) * sizeof(int32_t));
-	memset(p->data, 0, p->max_q+1);
-	q_empty(p);
+void q_init(struct Queue *p, int32_t length){
+  /*
+   * p->head = 0;
+   * p->tail = 0;
+   * p->stall = 1;
+   * p->underflow = 0;
+   * p->overflow = 0;
+   */
+  p->max_q = length;
+  p->data = malloc((length+1) * sizeof(int32_t));
+  memset(p->data, 0, p->max_q+1);
+  q_empty(p);
 }
 
 int q_length(struct Queue *p){

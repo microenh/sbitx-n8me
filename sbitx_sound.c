@@ -7,6 +7,7 @@
 #include "sound.h"
 #include "wiringPi.h"
 #include "sdr.h"
+#include "queue.h"
 
 
 /* follows the tutorial at http://alsamodular.sourceforge.net/alsa_programming_howto.html

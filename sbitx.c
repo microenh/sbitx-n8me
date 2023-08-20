@@ -21,6 +21,7 @@
 #include "i2cbb.h"
 #include "si5351.h"
 #include "ini.h"
+#include "queue.h"
 
 char audio_card[32];
 static int tx_shift = 512;
