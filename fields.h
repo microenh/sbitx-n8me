@@ -40,3 +40,14 @@ int do_pitch(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
 int do_kbd(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
 int do_macro(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
 int do_record(struct field *f, cairo_t *gfx, int event, int a, int b, int c);
+void do_cmd(char *cmd);
+
+extern struct field *active_layout;
+
+struct field *get_field(const char *cmd);
+void update_field(struct field *f);
+struct field *get_field_by_label(char *label);
+int get_field_value(char *cmd, char *value);
+int get_field_value_by_label(char *label, char *value);
+int remote_update_field(int i, char *text);
+int set_field(char *id, char *value);

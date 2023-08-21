@@ -96,7 +96,7 @@ void logbook_add(char *contact_callsign, char *rst_sent, char *exchange_sent,
 	char statement[1000], *err_msg, date_str[10], time_str[10];
 	char freq[12], log_freq[12], mode[10], mycallsign[10];
 
-	time_t log_time = time_sbitx();
+	time_t log_time = time(NULL);
 	struct tm *tmp = gmtime(&log_time);
 	get_field_value("r1:freq", freq);
 	get_field_value("r1:mode", mode);

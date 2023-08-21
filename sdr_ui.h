@@ -20,6 +20,5 @@ int macro_exec(int key, char *dest);
 void macro_label(int fn_key, char *label);
 void macro_list(char *output);
 void macro_get_keys(char *output);
-time_t time_sbitx();
 
 #define VER_STR "sbitx v2.0 - N8ME"

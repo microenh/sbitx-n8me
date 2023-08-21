@@ -1,5 +1,9 @@
 #include <cairo.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 #include "fields.h"
 #include "fonts.h"
@@ -180,3 +184,148 @@ struct field main_controls[] = {
 	//the last control has empty cmd field 
 	{"", NULL, 0, 0 ,0, 0, "#", 1, "Q", FIELD_BUTTON, FONT_FIELD_VALUE, NULL, 0,0,0},
 };
+
+struct field *active_layout = NULL;
+
+struct field *get_field(const char *cmd){
+	for (int i = 0; active_layout[i].cmd[0] > 0; i++)
+		if (!strcmp(active_layout[i].cmd, cmd))
+			return active_layout + i;
+	return NULL;
+}
+
+void update_field(struct field *f){
+	if (f->y >= 0)
+		f->is_dirty = 1;
+	f->update_remote = 1;
+} 
+
+struct field *get_field_by_label(char *label){
+	for (int i = 0; active_layout[i].cmd[0] > 0; i++)
+		if (!strcasecmp(active_layout[i].label, label))
+			return active_layout + i;
+	return NULL;
+}
+
+int get_field_value(char *cmd, char *value){
+	struct field *f = get_field(cmd);
+	if (!f)
+		return -1;
+	strcpy(value, f->value);
+	return 0;
+}
+
+int get_field_value_by_label(char *label, char *value){
+	struct field *f = get_field_by_label(label);
+	if (!f)
+		return -1;
+	strcpy(value, f->value);
+	return 0;
+}
+
+int remote_update_field(int i, char *text){
+	struct field * f = active_layout + i;
+
+	if (f->cmd[0] == 0)
+		return -1;
+	
+	// always send status afresh
+	if (!strcmp(f->label, "STATUS")){
+		// send time
+		time_t now = time(NULL);
+		struct tm *tmp = gmtime(&now);
+		sprintf(text, "STATUS %04d/%02d/%02d %02d:%02d:%02dZ",  
+			tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec); 
+		return 1;
+	}
+
+	strcpy(text, f->label);
+	strcat(text, " ");
+	strcat(text, f->value);
+	int update = f->update_remote;
+	f->update_remote = 0;
+
+	// debug on
+    //	if (!strcmp(f->cmd, "#text_in") && strlen(f->value))
+    //		printf("#text_in [%s] %d\n", f->value, update);
+	// debug off
+	return update;
+}
+
+// set the field directly to a particular value, programmatically
+int set_field(char *id, char *value){
+	struct field *f = get_field(id);
+	int v;
+	int debug = 0;
+
+	if (!f){
+		printf("*Error: field[%s] not found. Check for typo?\n", id);
+		return 1;
+	}
+	
+	if (f->value_type == FIELD_NUMBER){
+		int	v = atoi(value);
+		if (v < f->min)
+			v = f->min;
+		if (v > f->max)
+			v = f->max;
+		sprintf(f->value, "%d",  v);
+	}
+	else if (f->value_type == FIELD_SELECTION || f->value_type == FIELD_TOGGLE){
+		// toggle and selection are the same type: toggle has just two values instead of many more
+		char *p, *prev, *next, b[100];
+		// search the current text in the selection
+		prev = NULL;
+		if (debug)
+			printf("field selection [%s]\n");
+		strcpy(b, f->selection);
+		p = strtok(b, "/");
+		if (debug)
+			printf("first token [%s]\n", p);
+		while(p){
+			if (!strcmp(value, p))
+				break;
+			else
+				prev = p;
+			p = strtok(NULL, "/");
+			if (debug)
+				printf("second token [%s]\n", p);
+		}	
+		// set to the first option
+		if (p == NULL){
+			if (prev)
+				strcpy(f->value, prev);
+			printf("*Error: setting field[%s] to [%s] not permitted\n", f->cmd, value);
+			return 1;
+		}
+		else{
+			if (debug)
+				printf("Setting field to %s\n", value);
+			strcpy(f->value, value);
+		}
+	}
+	else if (f->value_type == FIELD_BUTTON){
+		strcpy(f->value, value);	
+		return 1;
+	}
+	else if (f->value_type == FIELD_TEXT){
+		if (strlen(value) > f->max || strlen(value) < f->min){
+			printf("*Error: field[%s] can't be set to [%s], improper size.\n", f->cmd, value);
+			return 1;
+		}
+		else
+			strcpy(f->value, value);
+	}
+
+	if (!strcmp(id, "#rit") || !strcmp(id, "#ft8_auto"))
+		debug = 1; 
+
+	// send a command to the radio 
+	char buff[200];
+	sprintf(buff, "%s=%s", f->cmd, f->value);
+	do_cmd(buff);
+	update_field(f);
+	return 0;
+}
+
+

@@ -377,7 +377,7 @@ int sbitx_ft8_decode(float *signal, int num_samples, bool is_ft8)
     };
 
 		//timestamp the packets
-		time_t	rawtime = time_sbitx();
+		time_t	rawtime = time(NULL);
 		char time_str[20], response[100];
 		struct tm *t = gmtime(&rawtime);
 		sprintf(time_str, "%02d%02d%02d", t->tm_hour, t->tm_min, t->tm_sec);

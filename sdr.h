@@ -204,7 +204,6 @@ void tx_off();
 long get_freq();
 int get_pitch();
 void do_cmd(char *cmd);
-time_t time_sbitx();
 
 // cw defines, these are bitfields, hence, powers of 2
 #define CW_IDLE (0)

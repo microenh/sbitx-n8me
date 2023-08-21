@@ -140,7 +140,7 @@ int sbitx_ft8_encode(char *message, int32_t freq,  float *signal, bool is_ft4);
 void ft8_queue_tx(){
 	char buff[1000];
 	//timestamp the packets for display log
-	time_t	rawtime = time_sbitx();
+	time_t	rawtime = time(NULL);
 	struct tm *t = gmtime(&rawtime);
 
   sprintf(buff, "%02d%02d%02d 99 +00 %04d ~ %s\n", t->tm_hour, t->tm_min, t->tm_sec, ft8_pitch, ft8_tx_text);
@@ -154,7 +154,7 @@ void ft8_queue_tx(){
 void ft8_tx(char *message, int freq){
 	char cmd[200], buff[1000];
 	FILE	*pf;
-	time_t	rawtime = time_sbitx();
+	time_t	rawtime = time(NULL);
 	struct tm *t = gmtime(&rawtime);
 
 	for (int i = 0; i < strlen(message); i++)
@@ -221,7 +221,7 @@ void ft8_rx(int32_t *samples, int count){
 		//ft8_rx_buff[ft8_rx_buff_index++] = samples[i];
 		ft8_rx_buffer[ft8_rx_buff_index++] = samples[i] / 200000000.0f;
 
-	int now = time_sbitx();
+	int now = time(NULL);
 	if (now != wallclock)	
 		wallclock = now;
 	else 
@@ -945,7 +945,7 @@ void modem_poll(int mode){
 
 	switch(mode){
 	case MODE_FT8:
-		t = time_sbitx();
+		t = time(NULL);
 		ft8_poll(t % 60, tx_is_on);
 	break;
 	case MODE_CW:
