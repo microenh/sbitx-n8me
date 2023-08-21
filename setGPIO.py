@@ -13,3 +13,5 @@ for i in pins_in:
 for i in pins_out:
     GPIO.setup(i, GPIO.OUT)
     GPIO.output(i, GPIO.LOW)
+
+print ('GPIO pins set.')
