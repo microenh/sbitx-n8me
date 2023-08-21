@@ -35,6 +35,7 @@ The initial sync between the gui values, the core radio values, settings, et al 
 #include <wiringPi.h>
 #include <wiringSerial.h>
 
+#include "drawing.h"
 #include "fields.h"
 #include "fonts.h"
 #include "hamlib.h"
@@ -89,42 +90,6 @@ struct encoder {
 
 static void tuning_isr(void);
 
-enum {
-	COLOR_SELECTED_TEXT,
-	COLOR_TEXT,
-	COLOR_TEXT_MUTED,
-	COLOR_SELECTED_BOX,
-	COLOR_BACKGROUND,
-	COLOR_FREQ,
-	COLOR_LABEL,
-	SPECTRUM_BACKGROUND,
-	SPECTRUM_GRID,
-	SPECTRUM_PLOT,
-	SPECTRUM_NEEDLE,
-	COLOR_CONTROL_BOX,
-	SPECTRUM_BANDWIDTH,
-	SPECTRUM_PITCH,
-	SELECTED_LINE
-};
-
-float palette[][3] = {
-	{1.0, 1.0, 1.0},    // COLOR_SELECTED_TEXT
-	{0.0, 1.0, 1.0},    // COLOR_TEXT
-	{0.5, 0.5, 0.5},    // COLOR_TEXT_MUTED
-	{1.0, 1.0, 1.0},    // COLOR_SELECTED_BOX
-	{0.0, 0.0, 0.0},    // COLOR_BACKGROUND
-	{1.0, 1.0, 0.0},    // COLOR_FREQ
-	{1.0, 0.0, 1.0},    // COLOR_LABEL
-	// spectrum
-	{0.0, 0.0, 0.0},    // SPECTRUM_BACKGROUND
-	{0.1, 0.1, 0.1},    // SPECTRUM_GRID
-	{1.0, 1.0, 0.0},    // SPECTRUM_PLOT
-	{0.2, 0.2, 0.2},    // SPECTRUM_NEEDLE
-	{0.5, 0.5, 0.5},    // COLOR_CONTROL_BOX
-	{0.2, 0.2, 0.2},    // SPECTRUM_BANDWIDTH
-	{1.0, 0.0, 0.0},    // SPECTRUM_PITCH
-	{0.1, 0.1, 0.2}     // SELECTED_LINE
-};
 
 static int screen_width=800, screen_height=480;
 static guint key_modifier = 0;
@@ -215,44 +180,6 @@ static gboolean ui_tick(gpointer gook);
 
 static void update_log_ed();
 
-static int measure_text(cairo_t *gfx, char *text, int font_entry){
-	cairo_text_extents_t ext;
-	struct font_style *s = font_table + font_entry;
-	
-	cairo_select_font_face(gfx, s->name, s->type, s->weight);
-	cairo_set_font_size(gfx, s->height);
-	cairo_move_to(gfx, 0, 0);
-	cairo_text_extents(gfx, text, &ext);
-	return (int) ext.x_advance;
-}
-
-static void draw_text(cairo_t *gfx, int x, int y, char *text, int font_entry){
-	struct font_style *s  = font_table + font_entry;
-	cairo_set_source_rgb( gfx, s->r, s->g, s->b);
-	cairo_select_font_face(gfx, s->name, s->type, s->weight);
-	cairo_set_font_size(gfx, s->height);
-	cairo_move_to(gfx, x, y + s->height);
-	cairo_show_text(gfx, text);
-}
-
-static void fill_rect(cairo_t *gfx, int x, int y, int w, int h, int color){
-	cairo_set_source_rgb( gfx, palette[color][0], palette[color][1], palette[color][2]);
-	cairo_rectangle(gfx, x, y, w, h);
-	cairo_fill(gfx);
-}
-
-static void rect(cairo_t *gfx, int x, int y, int w, int h, 
-	int color, int thickness){
-
-	cairo_set_source_rgb( gfx, 
-		palette[color][0], 
-		palette[color][1], 
-		palette[color][2]);
-
-	cairo_set_line_width(gfx, thickness);
-	cairo_rectangle(gfx, x, y, w, h);
-	cairo_stroke(gfx);
-}
 
 
 /****************************************************************************
