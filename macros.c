@@ -1,7 +1,9 @@
+#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <dirent.h>
+
+#include "fonts.h"
 #include "sdr_ui.h"
 
 int macro_exec(int key, char *dest);

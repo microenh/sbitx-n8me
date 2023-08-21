@@ -888,7 +888,7 @@ void set_rx_filter(){
 Write code that must repeatedly so things, it is called during the idle time 
 of the event loop 
 */
-void loop(){
+void loop(void){
 	delay(10);
 }
 
@@ -1198,7 +1198,7 @@ void tr_switch(int tx_on){
 /* 
 This is the one-time initialization code 
 */
-void setup(){
+void setup(void){
 
 	read_hw_ini();
 

@@ -33,6 +33,7 @@ The initial sync between the gui values, the core radio values, settings, et al 
 #include <wiringPi.h>
 #include <wiringSerial.h>
 
+#include "fonts.h"
 #include "hamlib.h"
 #include "i2cbb.h"
 #include "ini.h"
@@ -120,43 +121,8 @@ float palette[][3] = {
 	{0.1, 0.1, 0.2}     // SELECTED_LINE
 };
 
-int field_font_size = 12;
-int screen_width=800, screen_height=480;
-
-// we just use a look-up table to define the fonts used
-// the struct field indexes into this table
-struct font_style {
-	int index;
-	double r, g, b;
-	const char *name;
-	int height;
-	int weight;
-	int type;
-};
-
-guint key_modifier = 0;
-
-const char MONO[] = "Mono";
-const char ARIAL[] = "Arial";
-
-struct font_style font_table[] = {
-	{FONT_FIELD_LABEL,       0.0, 1.0, 1.0, MONO,  14, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_FIELD_VALUE,       1.0, 1.0, 1.0, MONO,  14, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_LARGE_FIELD,       0.0, 1.0, 1.0, MONO,  18, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_LARGE_VALUE,       1.0, 1.0, 1.0, ARIAL, 14, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_SMALL,             0.0, 1.0, 1.0, MONO,  10, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_LOG,               1.0, 1.0, 1.0, MONO,  12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_FT8_RX,            0.0, 1.0, 0.0, MONO,  12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_FT8_TX,            1.0, 0.6, 0.0, MONO,  12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_SMALL_FIELD_VALUE, 1.0, 1.0, 1.0, MONO,  11, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_CW_RX,             0.0, 1.0, 0.0, MONO,  12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_CW_TX,             1.0, 0.6, 0.0, MONO,  12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_FLDIGI_RX,         0.0, 1.0, 0.0, MONO,  12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_FLDIGI_TX,         1.0, 0.6, 0.0, MONO,  12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_TELNET,            0.0, 1.0, 0.0, MONO,  12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-	{FONT_FT8_QUEUED,        1.0, 0.6, 0.0, MONO,  12, CAIRO_FONT_WEIGHT_NORMAL, CAIRO_FONT_SLANT_NORMAL},
-};
-
+static int screen_width=800, screen_height=480;
+static guint key_modifier = 0;
 struct encoder enc_a, enc_b;
 
 #define MAX_FIELD_LENGTH 128
@@ -185,8 +151,8 @@ struct console_line {
 };
 static int console_style = FONT_LOG;
 static struct console_line console_stream[MAX_CONSOLE_LINES];
-int console_current_line = 0;
-int	console_selected_line = -1;
+static int console_current_line = 0;
+static int	console_selected_line = -1;
 
 // event ids, some of them are mapped from gtk itself
 enum {
@@ -237,8 +203,8 @@ static void set_bandwidth(int hz);
 
 
 //the main app window
-GtkWidget *window;
-GtkWidget *display_area = NULL;
+static GtkWidget *window;
+static GtkWidget *display_area = NULL;
 
 // these are callbacks called by the operating system
 static gboolean on_draw_event(GtkWidget* widget, cairo_t *cr, gpointer user_data); 
@@ -1798,7 +1764,7 @@ static void set_operating_freq(int dial_freq, char *response){
 	sdr_request(freq_request, response);
 }
 
-void abort_tx(){
+void abort_tx(void){
 	set_field("#text_in", "");
 	modem_abort();
 	tx_off();
@@ -3316,7 +3282,7 @@ static void ui_init(int argc, char *argv[]){
 		| GDK_POINTER_MOTION_MASK);
 
 	// scale the fonts as needed, these need to be done just once
-	for (int i = 0; i < sizeof(font_table)/sizeof(struct font_style); i++)
+	for (int i = 0; i < FONT_COUNT; i++)
 		font_table[i].height = (font_table[i].height * screen_height)/480;
 	scale_ui();	
 	gtk_widget_show_all(window);
@@ -3362,7 +3328,7 @@ int get_tx_data_length(){
 		return 0;
 }
 
-int is_in_tx(){
+int is_in_tx(void){
 	return in_tx;
 }
 

@@ -1,25 +1,27 @@
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+#include <arpa/inet.h>
+#include <complex.h>
+#include <ctype.h>
+#include <fftw3.h>
+#include <math.h>
 #include <math.h>
 #include <stdbool.h>
-#include <ctype.h>
-#include <arpa/inet.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
-#include <math.h>
-#include <complex.h>
-#include <fftw3.h>
+
+#include "fonts.h"
 #include "sdr.h"
 #include "sdr_ui.h"
 
 #include "ft8_lib/common/common.h"
-#include "ft8_lib/common/wave.h"
 #include "ft8_lib/common/debug.h"
-#include "ft8_lib/ft8/pack.h"
+#include "ft8_lib/common/wave.h"
+#include "ft8_lib/fft/kiss_fftr.h"
+#include "ft8_lib/ft8/constants.h"
 #include "ft8_lib/ft8/decode.h"
 #include "ft8_lib/ft8/encode.h"
-#include "ft8_lib/ft8/constants.h"
-#include "ft8_lib/fft/kiss_fftr.h"
+#include "ft8_lib/ft8/pack.h"
 
 void ft8_tx(char *message, int freq);
 void ft8_interpret(char *received, char *transmit);

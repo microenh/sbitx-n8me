@@ -191,7 +191,7 @@ void ft8_tx(char *message, int freq);
 void modem_abort();
 void ft8_interpret(char *received, char *transmit);
 
-int is_in_tx();
+int is_in_tx(void);
 
 enum {
     TX_OFF,

@@ -1,8 +1,9 @@
 {
   "files.associations": {
     "*.c": "c",
-    "*.h": "c"
-  },
+    "*.h": "c",
+    "typeinfo": "c"
+},
   "cmake.buildDirectory": "${workspaceFolder}/builder",
   "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
   "cmake.configureOnOpen": true,
