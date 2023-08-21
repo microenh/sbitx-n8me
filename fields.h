@@ -1,4 +1,4 @@
-#pragma ONCE
+#pragma once
 
 #define MAX_FIELD_LENGTH 128
 

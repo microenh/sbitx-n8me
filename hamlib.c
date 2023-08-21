@@ -98,7 +98,7 @@ void send_response(char *response){
 	printf(" %s]\n", response); 
 }
 
-int in_tx = 0;
+//int in_tx = 0;
 void send_freq(){
   char response[20];
   sprintf(response, "%d\n", get_freq());

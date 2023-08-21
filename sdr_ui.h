@@ -9,7 +9,6 @@ int remote_update_field(int i, char *text);
 void web_get_spectrum(char *buff);
 int web_get_console(char *buff, int max);
 int remote_audio_output(int16_t *samples);
-int is_in_tx(void);
 void abort_tx(void);
 extern int display_freq;
 

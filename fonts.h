@@ -1,4 +1,4 @@
-#pragma ONCE
+#pragma once
 
 enum {
     FONT_FIELD_LABEL,

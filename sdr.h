@@ -1,5 +1,8 @@
-/*
+#pragma once
 
+#include <fftw3.h>
+
+/*
 Overview:
 The SDR's core is quite simple:
 We convert the entire sampled band into frequency domain 
@@ -191,7 +194,7 @@ void ft8_tx(char *message, int freq);
 void modem_abort();
 void ft8_interpret(char *received, char *transmit);
 
-int is_in_tx(void);
+extern int in_tx;
 
 enum {
     TX_OFF,

@@ -912,7 +912,7 @@ void modem_init(){
 //psk31 will transmit a few spaces after the last character, etc.
 
 void modem_poll(int mode){
-	int tx_is_on = is_in_tx();
+	int tx_is_on = in_tx;
 	time_t t;
 	char buffer[10000];
 

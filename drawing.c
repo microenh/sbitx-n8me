@@ -1,7 +1,6 @@
 #include "drawing.h"
 #include "fonts.h"
 
-
 float palette[][3] = {
 	{1.0, 1.0, 1.0},    // COLOR_SELECTED_TEXT
 	{0.0, 1.0, 1.0},    // COLOR_TEXT
