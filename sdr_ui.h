@@ -1,8 +1,5 @@
 void setup(void);
 void loop(void);
-int set_field(char *id, char *value);
-int get_field_value(char *id, char *value);
-int get_field_value_by_label(char *label, char *value);
 extern int spectrum_plot[];
 void remote_execute(char *command);
 int remote_update_field(int i, char *text);

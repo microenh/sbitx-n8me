@@ -2849,7 +2849,7 @@ static void meter_calibrate(){
 	focus_field(f_bridge);
 }
 
-void do_cmd(char *cmd){	
+void do_cmd(const char *cmd){	
 	char request[1000], response[1000], buff[100];
 	
 	strcpy(request, cmd);			// don't mangle the original, thank you

@@ -20,9 +20,12 @@ const char NOTHING_SEL[] = "nothing valuable";
 const char MOUSE_SEL[] = "BLANK/LEFT/RIGHT/CROSSHAIR";
 const char KEYER_SEL[] = "KEYBOARD/IAMBIC/IAMBICB/STRAIGHT";
 
+// field commands
+const char R1_FREQ[] = "r1:freq";
+
 // the cmd fields that have '#' are not to be sent to the sdr
 struct field main_controls[] = {
-	{"r1:freq", do_tuning, 600, 0, 150, 49, "FREQ", 5, "14000000", FIELD_NUMBER, FONT_SMALL, NULL, 500000, 30000000, 100},
+	{R1_FREQ, do_tuning, 600, 0, 150, 49, "FREQ", 5, "14000000", FIELD_NUMBER, FONT_SMALL, NULL, 500000, 30000000, 100},
 
 	// Main RX
 	{"r1:volume", NULL, 750, 330, 50, 50, "AUDIO", 40, "60", FIELD_NUMBER, FONT_FIELD_VALUE, NULL, 0, 100, 1},
@@ -200,14 +203,14 @@ void update_field(struct field *f){
 	f->update_remote = 1;
 } 
 
-struct field *get_field_by_label(char *label){
+struct field *get_field_by_label(const char *label){
 	for (int i = 0; active_layout[i].cmd[0] > 0; i++)
 		if (!strcasecmp(active_layout[i].label, label))
 			return active_layout + i;
 	return NULL;
 }
 
-int get_field_value(char *cmd, char *value){
+int get_field_value(const char *cmd, char *value){
 	struct field *f = get_field(cmd);
 	if (!f)
 		return -1;
@@ -215,7 +218,7 @@ int get_field_value(char *cmd, char *value){
 	return 0;
 }
 
-int get_field_value_by_label(char *label, char *value){
+int get_field_value_by_label(const char *label, char *value){
 	struct field *f = get_field_by_label(label);
 	if (!f)
 		return -1;
@@ -253,7 +256,7 @@ int remote_update_field(int i, char *text){
 }
 
 // set the field directly to a particular value, programmatically
-int set_field(char *id, char *value){
+int set_field(const char *id, char *value){
 	struct field *f = get_field(id);
 	int v;
 	int debug = 0;

@@ -1,20 +1,22 @@
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <string.h>
 #include <arpa/inet.h>
-#include <stdlib.h>
+#include <complex.h>
+#include <complex.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <complex.h>
-#include <math.h>
 #include <fcntl.h>
-#include <complex.h>
 #include <fftw3.h>
-#include "sdr.h"
+#include <math.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include "fields.h"
 #include "sdr_ui.h"
+#include "sdr.h"
 
 static int welcome_socket = -1, data_socket = -1;
 #define MAX_DATA 1000

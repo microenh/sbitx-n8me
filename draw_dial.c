@@ -57,17 +57,26 @@ void draw_dial(struct field *f, cairo_t *gfx){
     const char *A_BUF = "A:  %s";
     const char *B_BUF = "B:  %s";
 
-	struct font_style *s = font_table + FONT_FIELD_LABEL;
+    #if 0
 	struct field *rit = get_field("#rit");
 	struct field *split = get_field("#split");
 	struct field *vfo = get_field("#vfo");
 	struct field *vfo_a = get_field("#vfo_a_freq");
 	struct field *vfo_b = get_field("#vfo_b_freq");
 	struct field *rit_delta = get_field("#rit_delta");
+    #endif
+
+	static struct field *rit;
+	static struct field *split;
+	static struct field *vfo;
+	static struct field *vfo_a;
+	static struct field *vfo_b;
+	static struct field *rit_delta;
+
 	char buff[20];
 	char temp_str[20];
 
-    // initialize screen locations
+    // initialize screen locations and field pointers
     static int label_x = -1, label_y, top_x, top_y, bottom_x, bottom_y;
     if (label_x == -1) {
         label_x = f->x + (f->width - measure_text(gfx, f->label, LABEL_FONT)) / 2;
@@ -80,6 +89,13 @@ void draw_dial(struct field *f, cairo_t *gfx){
         bottom_y = top_y + top_h;
         top_x = f->x + 5;
         bottom_x = top_x;
+
+        rit = get_field("#rit");
+        split = get_field("#split");
+        vfo = get_field("#vfo");
+        vfo_a = get_field("#vfo_a_freq");
+        vfo_b = get_field("#vfo_b_freq");
+        rit_delta = get_field("#rit_delta");
     }
 
 	fill_rect(gfx, f->x+1, f->y+1, f->width-2, f->height-2, COLOR_BACKGROUND);
@@ -95,12 +111,6 @@ void draw_dial(struct field *f, cairo_t *gfx){
 	int width, offset, freq_top, freq_bottom, offset_y = LABEL_Y_OFFSET;
     char *top_buf, *bottom_buf;
 	
-    #if 0
-	width = measure_text(gfx, f->label, FONT_SMALL);
-	offset = f->width/2 - width/2;
-	draw_text(gfx, f->x + offset, f->y + offset_y,  f->label, FONT_SMALL);
-    #endif
-
 	if (!strcmp(rit->value, "ON")){
     	if (!in_tx){
     		sprintf(temp_str, "%d", (atoi(f->value) + atoi(rit_delta->value)));

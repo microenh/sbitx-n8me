@@ -206,7 +206,7 @@ void tx_on(int trigger);
 void tx_off();
 long get_freq();
 int get_pitch();
-void do_cmd(char *cmd);
+// void do_cmd(char *cmd);
 
 // cw defines, these are bitfields, hence, powers of 2
 #define CW_IDLE (0)
