@@ -32,6 +32,16 @@ int measure_text(cairo_t *gfx, char *text, int font_entry){
 	return (int) ext.x_advance;
 }
 
+int measure_text_y(cairo_t *gfx, int font_entry){
+	cairo_font_extents_t ext;
+	struct font_style *s = font_table + font_entry;
+	
+	cairo_select_font_face(gfx, s->name, s->type, s->weight);
+	cairo_set_font_size(gfx, s->height);
+	cairo_font_extents(gfx, &ext);
+	return (int) ext.height;
+}
+
 void draw_text(cairo_t *gfx, int x, int y, char *text, int font_entry){
 	struct font_style *s  = font_table + font_entry;
 	cairo_set_source_rgb( gfx, s->r, s->g, s->b);

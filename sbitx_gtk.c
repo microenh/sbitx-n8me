@@ -54,9 +54,6 @@ struct Queue q_remote_commands;
 struct Queue q_tx_text;
 
 /* Front Panel controls */
-char pins[15] = {0, 2, 3, 6, 7, 
-				10, 11, 12, 13, 14, 
-				21, 22, 23, 25, 27};
 
 #define ENC1_A  (13)
 #define ENC1_B  (12)
@@ -1512,7 +1509,7 @@ int do_pitch(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 	return 0;
 }
 
-//called for RIT as well as the main tuning
+// called for RIT as well as the main tuning
 int do_tuning(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 
 	static struct timespec last_change_time, this_change_time;
@@ -1555,6 +1552,7 @@ int do_tuning(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 					char tempstr[100];
 					sprintf(tempstr, "%d", rit_delta);
 					set_field("#rit_delta", tempstr);
+					// printf("moved rit to %s\n", f->value);
 				} else
 					return 1;
 			} else
@@ -1568,7 +1566,7 @@ int do_tuning(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 					char tempstr[100];
 					sprintf(tempstr, "%d", rit_delta);
 					set_field("#rit_delta", tempstr);
-					printf("moved rit to %s\n", f->value);
+					// printf("moved rit to %s\n", f->value);
 				}
 				else
 					return 1;

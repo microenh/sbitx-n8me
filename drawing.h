@@ -3,6 +3,7 @@
 #include <cairo.h>
 
 int measure_text(cairo_t *gfx, char *text, int font_entry);
+int measure_text_y(cairo_t *gfx, int font_entry);
 void draw_text(cairo_t *gfx, int x, int y, char *text, int font_entry);
 void fill_rect(cairo_t *gfx, int x, int y, int w, int h, int color);
 void rect(cairo_t *gfx, int x, int y, int w, int h, int color, int thickness);

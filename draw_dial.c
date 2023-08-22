@@ -41,13 +41,23 @@ static char* freq_with_separators(char* freq_str){
 }
 
 
-const int FREQ_LABEL_Y_OFFSET = 5;
-const int TOP_VFO_Y_OFFSET = 16;
-const int BOT_VFO_Y_OFFSET = 35;
-const int VFO_X_OFFSET = 5;
 
 void draw_dial(struct field *f, cairo_t *gfx){
-	struct font_style *s = font_table + 0;
+    const int LABEL_FONT = FONT_SMALL;
+    const int TOP_FONT = FONT_LARGE_VALUE;
+    const int BOTTOM_FONT = FONT_LARGE_VALUE;
+
+    const int LABEL_Y_OFFSET = 5;
+    const int TOP_VFO_Y_OFFSET = 16;
+    const int BOT_VFO_Y_OFFSET = 35;
+    const int VFO_X_OFFSET = 5;
+
+    const char *TX_BUF = "TX: %s";
+    const char *RX_BUF = "RX: %s";
+    const char *A_BUF = "A:  %s";
+    const char *B_BUF = "B:  %s";
+
+	struct font_style *s = font_table + FONT_FIELD_LABEL;
 	struct field *rit = get_field("#rit");
 	struct field *split = get_field("#split");
 	struct field *vfo = get_field("#vfo");
@@ -55,85 +65,102 @@ void draw_dial(struct field *f, cairo_t *gfx){
 	struct field *vfo_b = get_field("#vfo_b_freq");
 	struct field *rit_delta = get_field("#rit_delta");
 	char buff[20];
-
 	char temp_str[20];
 
-	fill_rect(gfx, f->x+1, f->y+1, f->width-2,f->height-2, COLOR_BACKGROUND);
+    // initialize screen locations
+    static int label_x = -1, label_y, top_x, top_y, bottom_x, bottom_y;
+    if (label_x == -1) {
+        label_x = f->x + (f->width - measure_text(gfx, f->label, LABEL_FONT)) / 2;
+        int label_h = measure_text_y(gfx, LABEL_FONT);
+        int top_h = measure_text_y(gfx, TOP_FONT);
+        int bottom_h = measure_text_y(gfx, BOTTOM_FONT);
+        // printf("%d, %d, %d\r\n", label_h, top_h, bottom_h);
+        label_y = f->y + (f->height - (label_h + top_h + bottom_h)) / 2;
+        top_y = label_y + label_h;
+        bottom_y = top_y + top_h;
+        top_x = f->x + 5;
+        bottom_x = top_x;
+    }
 
-	//update the vfos
+	fill_rect(gfx, f->x+1, f->y+1, f->width-2, f->height-2, COLOR_BACKGROUND);
+    draw_text(gfx, label_x, label_y, f->label, LABEL_FONT);
+
+	// update the vfos
 	if (vfo->value[0] == 'A')
 		strcpy(vfo_a->value, f->value);
 	else
 		strcpy(vfo_b->value, f->value);
 
-	int width, offset;	
+
+	int width, offset, freq_top, freq_bottom, offset_y = LABEL_Y_OFFSET;
+    char *top_buf, *bottom_buf;
 	
+    #if 0
 	width = measure_text(gfx, f->label, FONT_SMALL);
 	offset = f->width/2 - width/2;
-	draw_text(gfx, f->x + offset, f->y+FREQ_LABEL_Y_OFFSET ,  f->label, FONT_SMALL);
-	width = measure_text(gfx, f->value, f->font_index);
-	offset = f->width/2 - width/2;
+	draw_text(gfx, f->x + offset, f->y + offset_y,  f->label, FONT_SMALL);
+    #endif
+
 	if (!strcmp(rit->value, "ON")){
     	if (!in_tx){
-    		sprintf(buff, "TX:%s", freq_with_separators(f->value));
-    		draw_text(gfx, f->x+VFO_X_OFFSET , f->y+BOT_VFO_Y_OFFSET , buff , FONT_SMALL);
     		sprintf(temp_str, "%d", (atoi(f->value) + atoi(rit_delta->value)));
-    		sprintf(buff, "RX:%s", freq_with_separators(temp_str));
+    		sprintf(buff, RX_BUF, freq_with_separators(temp_str));
     		draw_text(gfx, f->x+VFO_X_OFFSET , f->y+TOP_VFO_Y_OFFSET , buff , FONT_LARGE_VALUE);
+    		sprintf(buff, TX_BUF, freq_with_separators(f->value));
+    		draw_text(gfx, f->x+VFO_X_OFFSET , f->y+BOT_VFO_Y_OFFSET , buff , FONT_SMALL);
     	} else {
-    		sprintf(buff, "TX:%s", freq_with_separators(f->value));
-    		draw_text(gfx, f->x+VFO_X_OFFSET , f->y+BOT_VFO_Y_OFFSET , buff , FONT_SMALL);
     		sprintf(temp_str, "%d", (atoi(f->value) + atoi(rit_delta->value)));
-    		sprintf(buff, "RX:%s", freq_with_separators(temp_str));
+    		sprintf(buff, RX_BUF, freq_with_separators(temp_str));
     		draw_text(gfx, f->x+VFO_X_OFFSET , f->y+TOP_VFO_Y_OFFSET , buff , FONT_LARGE_VALUE);
+    		sprintf(buff, TX_BUF, freq_with_separators(f->value));
+    		draw_text(gfx, f->x+VFO_X_OFFSET , f->y+BOT_VFO_Y_OFFSET , buff , FONT_SMALL);
     	}
 	} else if (!strcmp(split->value, "ON")){
 		if (!in_tx){
-			// sprintf(temp_str, "%d", vfo_b_freq);
-			strcpy(temp_str, vfo_b->value);
-			sprintf(buff, "TX:%s", freq_with_separators(temp_str));
-			draw_text(gfx, f->x+VFO_X_OFFSET , f->y+BOT_VFO_Y_OFFSET , buff , FONT_SMALL);
-			sprintf(buff, "RX:%s", freq_with_separators(f->value));
+			sprintf(buff, RX_BUF, freq_with_separators(f->value));
 			draw_text(gfx, f->x+VFO_X_OFFSET , f->y+TOP_VFO_Y_OFFSET , buff , FONT_LARGE_VALUE);
+			strcpy(temp_str, vfo_b->value);
+			sprintf(buff, TX_BUF, freq_with_separators(temp_str));
+			draw_text(gfx, f->x+VFO_X_OFFSET , f->y+BOT_VFO_Y_OFFSET , buff , FONT_SMALL);
 		} else {
 			// sprintf(temp_str, "%d", vfo_b_freq);
 			strcpy(temp_str, vfo_b->value);
-			sprintf(buff, "TX:%s", freq_with_separators(temp_str));
+			sprintf(buff, TX_BUF, freq_with_separators(temp_str));
 			draw_text(gfx, f->x+VFO_X_OFFSET , f->y+TOP_VFO_Y_OFFSET , buff , FONT_LARGE_VALUE);
-			sprintf(buff, "RX:%d", atoi(f->value) + atoi(rit_delta->value));
+			sprintf(buff, RX_BUF, atoi(f->value) + atoi(rit_delta->value));
 			draw_text(gfx, f->x+VFO_X_OFFSET , f->y+BOT_VFO_Y_OFFSET , buff , FONT_SMALL);
 		}
 	} else if (!strcmp(vfo->value, "B")){
 		if (!in_tx){
 			// sprintf(temp_str, "%d", vfo_b_freq);
 			strcpy(temp_str, vfo_b->value);
-			sprintf(buff, "B:%s", freq_with_separators(temp_str));
+			sprintf(buff, B_BUF, freq_with_separators(temp_str));
 			draw_text(gfx, f->x+VFO_X_OFFSET , f->y+TOP_VFO_Y_OFFSET , buff , FONT_LARGE_VALUE);
-			sprintf(buff, "A:%s", freq_with_separators(f->value));
+			sprintf(buff, A_BUF, freq_with_separators(f->value));
 			draw_text(gfx, f->x+VFO_X_OFFSET , f->y+BOT_VFO_Y_OFFSET , buff , FONT_SMALL);
 		} else {
 			// sprintf(temp_str, "%d", vfo_b_freq);
 			strcpy(temp_str, vfo_b->value);
-			sprintf(buff, "B:%s", freq_with_separators(temp_str));
+			sprintf(buff, B_BUF, freq_with_separators(temp_str));
 			draw_text(gfx, f->x+VFO_X_OFFSET , f->y+TOP_VFO_Y_OFFSET , buff , FONT_LARGE_VALUE);
-			sprintf(buff, "TX:%s", freq_with_separators(f->value));
+			sprintf(buff, TX_BUF, freq_with_separators(f->value));
 			draw_text(gfx, f->x+VFO_X_OFFSET , f->y+BOT_VFO_Y_OFFSET , buff , FONT_SMALL);
 		}
 	} else {
 		if (!in_tx){
 			strcpy(temp_str, vfo_a->value);
     		// sprintf(temp_str, "%d", vfo_a_freq);
-    		sprintf(buff, "A:%s", freq_with_separators(temp_str));
-    		draw_text(gfx, f->x+VFO_X_OFFSET , f->y+TOP_VFO_Y_OFFSET , buff , FONT_LARGE_VALUE);
-    		sprintf(buff, "B:%s", freq_with_separators(f->value));
-    		draw_text(gfx, f->x+VFO_X_OFFSET , f->y+BOT_VFO_Y_OFFSET , buff , FONT_SMALL);
+    		sprintf(buff, A_BUF, freq_with_separators(temp_str));
+    		draw_text(gfx, top_x, top_y, buff, TOP_FONT);
+    		sprintf(buff, B_BUF, freq_with_separators(f->value));
+    		draw_text(gfx, bottom_x, bottom_y, buff, BOTTOM_FONT);
     	} else {
 			strcpy(temp_str, vfo_a->value);
     		// sprintf(temp_str, "%d", vfo_a_freq);
-    		sprintf(buff, "A:%s", freq_with_separators(temp_str));
-    		draw_text(gfx, f->x+VFO_X_OFFSET , f->y+TOP_VFO_Y_OFFSET , buff , FONT_LARGE_VALUE);
-    		sprintf(buff, "TX:%s", freq_with_separators(f->value));
-    		draw_text(gfx, f->x+VFO_X_OFFSET , f->y+BOT_VFO_Y_OFFSET , buff , FONT_SMALL);
+    		sprintf(buff, A_BUF, freq_with_separators(temp_str));
+    		draw_text(gfx, top_x, top_y, buff, TOP_FONT);
+    		sprintf(buff, TX_BUF, freq_with_separators(f->value));
+    		draw_text(gfx, bottom_x, bottom_y, buff, BOTTOM_FONT);
     	}
 	}
 }
