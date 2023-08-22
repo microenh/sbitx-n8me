@@ -15,7 +15,7 @@ enum {
 };
 
 struct field {
-	char const  *cmd;
+	char const * const cmd;
 	int			(*fn)(struct field *f, cairo_t *gfx, int event, int param_a, int param_b, int param_c);
 	int			x, y, width, height;
 	char		label[30];
@@ -23,7 +23,7 @@ struct field {
 	char		value[MAX_FIELD_LENGTH];
 	char		value_type; // NUMBER, SELECTION, TEXT, TOGGLE, BUTTON
 	int 		font_index; // refers to font_style table
-	char const	*selection;
+	char const * const selection;
 	long int	min, max;
 	int			step;
 	char		is_dirty;
@@ -46,13 +46,11 @@ void do_cmd(const char *cmd);
 
 extern struct field *active_layout;
 
-struct field *get_field(const char *cmd);
+struct field *get_field(const char * const cmd);
 void update_field(struct field *f);
-struct field *get_field_by_label(const char *label);
-int get_field_value(const char *cmd, char *value);
-int get_field_value_by_label(const char *label, char *value);
+struct field *get_field_by_label(const char * const label);
+int get_field_value(const char * const cmd, char *value);
+int get_field_value_by_label(const char * const label, char *value);
 int remote_update_field(int i, char *text);
-int set_field(const char *id, char *value);
+int set_field(const char * const id, char *value);
 
-// field commands
-extern const char R1_FREQ[];

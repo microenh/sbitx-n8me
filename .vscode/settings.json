@@ -2,6 +2,7 @@
   "files.associations": {
     "*.c": "c",
     "*.h": "c",
+    "fields.h": "c",
     "typeinfo": "c"
 },
   "cmake.buildDirectory": "${workspaceFolder}/builder",
