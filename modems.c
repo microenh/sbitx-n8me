@@ -18,11 +18,11 @@
 #include <sys/types.h>
 #include <sys/types.h>
 #include <time.h>
-#include <time.h>
 #include <unistd.h>
 #include <wiringPi.h>
 #include <wiringSerial.h>
 
+#include "fields.h"
 #include "fonts.h"
 #include "sdr.h"
 #include "sdr_ui.h"

@@ -1,27 +1,29 @@
+#include <complex.h>
+#include <errno.h>
+#include <fcntl.h> 
+#include <fftw3.h>
+#include <linux/limits.h>
+#include <linux/types.h>
+#include <math.h>
+#include <pthread.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
-#include <fcntl.h> 
-#include <math.h>
-#include <complex.h>
-#include <fftw3.h>
+#include <time.h>
 #include <unistd.h>
 #include <wiringPi.h>
 #include <wiringSerial.h>
-#include <linux/types.h>
-#include <linux/limits.h>
-#include <stdint.h>
-#include <time.h>
-#include <signal.h>
-#include <pthread.h>
-#include <errno.h>
-#include "sdr.h"
-#include "sdr_ui.h"
-#include "sound.h"
+
 #include "i2cbb.h"
-#include "si5351.h"
 #include "ini.h"
+#include "panafall.h"
 #include "queue.h"
+#include "sdr_ui.h"
+#include "sdr.h"
+#include "si5351.h"
+#include "sound.h"
 
 char audio_card[32];
 static int tx_shift = 512;
