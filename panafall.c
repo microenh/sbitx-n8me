@@ -1,5 +1,6 @@
 #include <gtk/gtk.h>
 
+#include "command_str.h"
 #include "drawing.h"
 #include "fonts.h"
 #include "panafall.h"
@@ -82,38 +83,31 @@ static void draw_modulation(struct field *f, cairo_t *gfx){
 }
 
 static int waterfall_offset = 30;
-static int  *wf;
+static int *wf;
 static GdkPixbuf *waterfall_pixbuf = NULL;
 static guint8 *waterfall_map;
 
 void init_waterfall(){
-	struct field *f = get_field("waterfall");
+	struct field *f = get_field(WATERFALL);
 
 	// this will store the db values of waterfall
 	wf = malloc((MAX_BINS/2) * f->height * sizeof(int));
-	if (!wf){
-		puts("*Error: malloc failed on waterfall buffer");
+	// this will store the bitmap pixels, 3 bytes per pixel
+	waterfall_map = malloc(f->width * f->height * 3);
+	if (!wf || !waterfall_map){
+		puts("*Error: malloc failed on waterfall buffers");
 		exit(0);
 	}
-	memset(wf, 0, (MAX_BINS/2) * f->height * sizeof(int));
 
-	// this will store the bitmap pixles, 3 bytes per pixel
-	waterfall_map = malloc(f->width * f->height * 3);
-	for (int i = 0; i < f->width; i++)
-		for (int j = 0; j < f->height; j++){
-			int row = j * f->width * 3;
-			int	index = row + i * 3;
-			waterfall_map[index++] = 0;
-			waterfall_map[index++] = i % 256;
-			waterfall_map[index++] = j % 256; 
-	}
-	if (waterfall_pixbuf)
-		g_object_ref(waterfall_pixbuf);
-	waterfall_pixbuf = gdk_pixbuf_new_from_data(waterfall_map,
-		GDK_COLORSPACE_RGB, FALSE, 8, f->width, f->height, f->width*3, NULL,NULL);
-		// format,         alpha?, bit,  widht,    height, rowstride, destryfn, data
+	// if (waterfall_pixbuf)
+	// 	g_object_ref(waterfall_pixbuf);
 
-	printf("Initialized the waterfall\n");
+    waterfall_pixbuf = gdk_pixbuf_new_from_data(waterfall_map,
+        // format,          alpha?, bit,  width,    height,    rowstride,  destryfn, data
+        GDK_COLORSPACE_RGB, FALSE,  8,    f->width, f->height, f->width*3, NULL,     NULL);
+
+
+	// printf("Initialized the waterfall\n");
 	// printf("%ld return from pixbuff", (int)waterfall_pixbuf);	
 }
 
