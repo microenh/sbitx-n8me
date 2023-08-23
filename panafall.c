@@ -99,6 +99,17 @@ void init_waterfall(){
 		exit(0);
 	}
 
+    #if 0
+    for (int i = 0; i < f->width; i++)
+		for (int j = 0; j < f->height; j++){
+			int row = j * f->width * 3;
+			int	index = row + i * 3;
+			waterfall_map[index++] = 0;
+			waterfall_map[index++] = i % 256;
+			waterfall_map[index++] = j % 256;
+	    }
+    #endif
+
 	// if (waterfall_pixbuf)
 	// 	g_object_ref(waterfall_pixbuf);
 
@@ -114,12 +125,11 @@ void init_waterfall(){
 
 void draw_waterfall(struct field *f, cairo_t *gfx){
 
-	memmove(waterfall_map + f->width * 3, waterfall_map, 
-		f->width * (f->height - 1) * 3);
+	memmove(waterfall_map + f->width * 3, waterfall_map, f->width * (f->height - 1) * 3);
 
-	int index = 0;
+	// int index = 0;
 	
-	for (int i = 0; i < f->width; i++){
+	for (int i = 0, index = 0; i < f->width; i++){
 		int v = wf[i] * 2;
 		if (v > 100)		// we limit ourselves to 100 db range
 			v = 100;
@@ -128,22 +138,19 @@ void draw_waterfall(struct field *f, cairo_t *gfx){
 			waterfall_map[index++] = 0;
 			waterfall_map[index++] = 0;
 			waterfall_map[index++] = v * 12; 
-		}
-		else if (v < 40){							// r=0, increase g, blue is max
+		} else if (v < 40){							// r=0, increase g, blue is max
 			waterfall_map[index++] = 0;
 			waterfall_map[index++] = (v - 20) * 12;
 			waterfall_map[index++] = 255; 
-		}
-		else if (v < 60){							// r=0, g is max, decrease b
+		} else if (v < 60){							// r=0, g is max, decrease b
 			waterfall_map[index++] = 0;
 			waterfall_map[index++] = 255; 
 			waterfall_map[index++] = (60-v)*12; 
-		}
-		else if (v < 80){						 	// increase r, g is max, b=0
+		} else if (v < 80){						 	// increase r, g is max, b=0
 			waterfall_map[index++] = (v-60) * 12;
 			waterfall_map[index++] = 255;
 			waterfall_map[index++] = 0; 
-		}else {										// r is max, decrease g, b=0
+		} else {										// r is max, decrease g, b=0
 			waterfall_map[index++] = 255;
 			waterfall_map[index++] = (100-v) * 12;
 			waterfall_map[index++] = 0; 
@@ -322,7 +329,8 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 		fill_rect(gfx, f->x + needle_x, f->y, 1, grid_height,  SPECTRUM_NEEDLE);
 	}
 
-	draw_waterfall(get_field("waterfall"), gfx);
+    // [mee] 8/23/23 - already called from do_waterfall
+    // draw_waterfall(get_field(WATERFALL), gfx);
 }
 
 #if 0

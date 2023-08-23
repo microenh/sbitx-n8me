@@ -2158,7 +2158,7 @@ static gboolean ui_tick(gpointer gook){
 		//echo the keystrokes for chatty modes like cw/rtty/psk31/etc
 		if (!strncmp(remote_cmd, "key ", 4))
 			for (int i = 4; remote_cmd[i] > 0; i++)
-				edit_field(get_field("#text_in"), remote_cmd[i]);	
+				edit_field(get_field(_TEXT_IN), remote_cmd[i]);	
 		else {
 			cmd_exec(remote_cmd);
 			settings_updated = 1; //save the settings
@@ -2184,7 +2184,7 @@ static gboolean ui_tick(gpointer gook){
 	// char message[100];
 	
 	// check the tuning knob
-	struct field *f = get_field("r1:freq");
+	struct field *f = get_field(R1_FREQ);
 
 	if (abs(tuning_ticks) > 5)
 		tuning_ticks *= 4;
@@ -2203,7 +2203,7 @@ static gboolean ui_tick(gpointer gook){
 
 	#ifndef N8ME
 	if (ticks % 20 == 0){
-  		modem_poll(mode_id(get_field("r1:mode")->value));
+  		modem_poll(mode_id(get_field(R1_MODE)->value));
 	}
 	#endif
 
@@ -2216,29 +2216,29 @@ static gboolean ui_tick(gpointer gook){
 			char buff[10];
 
 			sprintf(buff,"%d", fwdpower);
-			set_field("#fwdpower", buff);		
+			set_field(_FWDPOWER, buff);		
 			sprintf(buff, "%d", vswr);
-			set_field("#vswr", buff);
+			set_field(_VSWR, buff);
 		}
 
-		struct field *f = get_field("spectrum");
+		struct field *f = get_field(SPECTRUM);
 		update_field(f);	// move this each time the spectrum watefall index is moved
-		f = get_field("waterfall");
+		f = get_field(WATERFALL);
 		update_field(f);
-		f = get_field("#status");
+		f = get_field(_STATUS);
 		update_field(f);
 
 		if (digitalRead(ENC1_SW) == 0)
-				focus_field(get_field("r1:volume"));
+				focus_field(get_field(R1_VOLUME));
 
 		if (record_start)
-			update_field(get_field("#record"));
+			update_field(get_field(_RECORD));
 
 		// alternate character from the softkeyboard upon long press
 		if (f_focus && focus_since + 500 < millis() 
 				&& !strncmp(f_focus->cmd, "#kbd_", 5) && mouse_down){
 			// emit the symbol
-			struct field *f_text = get_field("#text_in");
+			struct field *f_text = get_field(_TEXT_IN);
 			// replace the previous character with teh shifted one
 			edit_field(f_text,MIN_KEY_BACKSPACE); 
 			edit_field(f_text, f_focus->label[0]);
@@ -2247,9 +2247,9 @@ static gboolean ui_tick(gpointer gook){
 
 		// check if low and high settings are stepping on each other
 		char new_value[20];
-		while (atoi(get_field("r1:low")->value) > atoi(get_field("r1:high")->value)){
-			sprintf(new_value, "%d", atoi(get_field("r1:high")->value)+get_field("r1:high")->step);
-			set_field("r1:high",new_value);
+		while (atoi(get_field(R1_LOW)->value) > atoi(get_field(R1_HIGH)->value)){
+			sprintf(new_value, "%d", atoi(get_field(R1_HIGH)->value)+get_field(R1_HIGH)->step);
+			set_field(R1_HIGH,new_value);
 		}
 
 
@@ -2257,8 +2257,8 @@ static gboolean ui_tick(gpointer gook){
 
 		int cursor_type;
 
-		if (strcmp(get_field("mouse_pointer")->value, last_mouse_pointer_value)){
-			sprintf(last_mouse_pointer_value,get_field("mouse_pointer")->value);
+		if (strcmp(get_field(MOUSE_POINTER)->value, last_mouse_pointer_value)){
+			sprintf(last_mouse_pointer_value,get_field(MOUSE_POINTER)->value);
 			if (!strcmp(last_mouse_pointer_value,"BLANK")){
 				cursor_type = GDK_BLANK_CURSOR;
 			} else if (!strcmp(last_mouse_pointer_value,"RIGHT")){
@@ -2275,14 +2275,14 @@ static gboolean ui_tick(gpointer gook){
 
 		ticks = 0;
 	}
-	// update_field(get_field("#text_in")); //modem might have extracted some text
+	// update_field(get_field(_TEXT_IN)); //modem might have extracted some text
 
 	hamlib_slice();
 	remote_slice();
 	save_user_settings(0);
 
  
-	f = get_field("r1:mode");
+	f = get_field(R1_MODE);
 	//straight key in CW
 	if (f && (!strcmp(f->value, "2TONE") || !strcmp(f->value, "LSB") || 
 	!strcmp(f->value, "USB"))){
@@ -2362,7 +2362,7 @@ static void ui_init(int argc, char *argv[]){
 	#else
 	gtk_window_fullscreen(GTK_WINDOW(window));
 	#endif
-	focus_field(get_field("r1:volume"));
+	focus_field(get_field(R1_VOLUME));
 }
 
 /* handle modem callbacks for more data */
