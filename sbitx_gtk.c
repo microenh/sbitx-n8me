@@ -4,12 +4,9 @@ The initial sync between the gui values, the core radio values, settings, et al 
 
 #include <arpa/inet.h>
 #include <cairo.h>
-#include <complex.h>
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <fftw3.h>
-// #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
 #include <libgen.h>
 #include <limits.h>
@@ -882,7 +879,7 @@ int do_spectrum(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 	int span, pitch;
 	long freq;
 	char buff[100];
-	int mode = mode_id(get_field("r1:mode")->value);
+	int mode = mode_id(get_field(R1_MODE)->value);
 
 	switch(event){
 		case FIELD_DRAW:
@@ -890,9 +887,9 @@ int do_spectrum(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 			return 1;
 			break;
 		case GDK_MOTION_NOTIFY:
-	    	f_freq = get_field("r1:freq");
+	    	f_freq = get_field(R1_FREQ);
 			freq = atoi(f_freq->value);
-			f_span = get_field("#span");
+			f_span = get_field(_SPAN);
 			span = atof(f_span->value) * 1000;
 			//a has the x position of the mouse
 			freq -= ((a - last_mouse_x) * (span/f->width));
@@ -902,9 +899,9 @@ int do_spectrum(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 			break;
     	case GDK_BUTTON_PRESS: 
 			if (c == GDK_BUTTON_SECONDARY){ // right click QSY
-				f_freq = get_field("r1:freq");
+				f_freq = get_field(R1_FREQ);
 				freq = atoi(f_freq->value);
-				f_span = get_field("#span");
+				f_span = get_field(_SPAN);
 				span = atof(f_span->value) * 1000;
 				f_pitch = get_field("rx_pitch");
 				pitch = atoi(f_pitch->value);
@@ -916,7 +913,7 @@ int do_spectrum(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 					freq += (((float)(a - f->x) / (float)f->width) - 0.5) * (float)span;
 				}
 				sprintf(buff, "%ld", freq);
-				set_field("r1:freq", buff);
+				set_field(R1_FREQ, buff);
 				return 1;
     		}
     		break;
@@ -1091,9 +1088,9 @@ int do_text(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 			cmd_exec(f->value + 1);
 			f->value[0] = 0;
 			update_field(f);
-		} else if ((a =='\n' || a == MIN_KEY_ENTER) && !strcmp(get_field("r1:mode")->value, "FT8") 
+		} else if ((a =='\n' || a == MIN_KEY_ENTER) && !strcmp(get_field(R1_MODE)->value, "FT8") 
 			&& f->value[0] != COMMAND_ESCAPE){
-			ft8_tx(f->value, atoi(get_field("#tx_pitch")->value));
+			ft8_tx(f->value, atoi(get_field(_TX_PITCH)->value));
 			f->value[0] = 0;		
 		} else if (a >= ' ' && a <= 127 && strlen(f->value) < f->max-1){
 			int l = strlen(f->value);
@@ -1155,16 +1152,16 @@ int do_pitch(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 		sdr_request(buff, response);
 
 		// move the bandwidth accordingly
-  		int mode = mode_id(get_field("r1:mode")->value);
+  		int mode = mode_id(get_field(R1_MODE)->value);
 		int bw = 4000;
 		switch(mode){
 			case MODE_CW:
 			case MODE_CWR:
-				bw = atoi(get_field("#bw_cw")->value);
+				bw = atoi(get_field(_BW_CW)->value);
 				set_bandwidth(bw);
 				break;
 			case MODE_DIGITAL:
-				bw = atoi(get_field("#bw_digital")->value);
+				bw = atoi(get_field(_BW_DIGITAL)->value);
 				set_bandwidth(bw);
 				break;
 		}
@@ -1184,7 +1181,7 @@ int do_tuning(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 
 	if (event == FIELD_EDIT){
 
-		if (!strcmp(get_field("tuning_acceleration")->value, "ON")){
+		if (!strcmp(get_field(TUNING_ACCELARATION)->value, "ON")){
     		clock_gettime(CLOCK_MONOTONIC_RAW, &this_change_time);
    			uint64_t delta_us = (this_change_time.tv_sec - last_change_time.tv_sec) * 1000000 + (this_change_time.tv_nsec - last_change_time.tv_nsec) / 1000;
     		char temp_char[100];
@@ -1192,13 +1189,13 @@ int do_tuning(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
     		// strcat(temp_char,"\r\n");
     		// write_console(FONT_LOG, temp_char);
    			clock_gettime(CLOCK_MONOTONIC_RAW, &last_change_time);
-    		if (delta_us < atof(get_field("tuning_accel_thresh2")->value)){
+    		if (delta_us < atof(get_field(TUNING_ACCEL_THRESH2)->value)){
     			if (tuning_step < 10000){
        				tuning_step = tuning_step * 100;
         			// sprintf(temp_char, "x100 activated\r\n");
         			// write_console(FONT_LOG, temp_char);
 				}
-    		} else if (delta_us < atof(get_field("tuning_accel_thresh1")->value)){
+    		} else if (delta_us < atof(get_field(TUNING_ACCEL_THRESH1)->value)){
     			if (tuning_step < 1000){
     				tuning_step = tuning_step * 10;
         			// printf(temp_char, "x10 activated\r\n");
@@ -1209,28 +1206,28 @@ int do_tuning(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 
 		if (a == MIN_KEY_UP && v + f->step <= f->max){
 			// this is tuning the radio
-			if (!strcmp(get_field("#rit")->value, "ON")){
-				struct field *f = get_field("#rit_delta");
+			if (!strcmp(get_field(_RIT)->value, "ON")){
+				struct field *f = get_field(_RIT_DELTA);
 				int rit_delta = atoi(f->value);
 				if(rit_delta < MAX_RIT){
 					rit_delta += tuning_step;
 					char tempstr[100];
 					sprintf(tempstr, "%d", rit_delta);
-					set_field("#rit_delta", tempstr);
+					set_field(_RIT_DELTA, tempstr);
 					// printf("moved rit to %s\n", f->value);
 				} else
 					return 1;
 			} else
 				v = (v / tuning_step + 1)*tuning_step;
 		} else if (a == MIN_KEY_DOWN && v - f->step >= f->min){
-			if (!strcmp(get_field("#rit")->value, "ON")){
-				struct field *f = get_field("#rit_delta");
+			if (!strcmp(get_field(_RIT)->value, "ON")){
+				struct field *f = get_field(_RIT_DELTA);
 				int rit_delta = atoi(f->value);
 				if (rit_delta > -MAX_RIT){
 					rit_delta -= tuning_step;
 					char tempstr[100];
 					sprintf(tempstr, "%d", rit_delta);
-					set_field("#rit_delta", tempstr);
+					set_field(_RIT_DELTA, tempstr);
 					// printf("moved rit to %s\n", f->value);
 				}
 				else
@@ -1263,12 +1260,12 @@ int do_tuning(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 
 int do_kbd(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 	if(event == GDK_BUTTON_PRESS){
-		struct field *f_text = get_field("#text_in");
-		if (!strcmp(f->cmd, "#kbd_macro"))
+		struct field *f_text = get_field(_TEXT_IN);
+		if (!strcmp(f->cmd, _KBD_MACRO))
 			set_ui(LAYOUT_MACROS);
-		else if (!strcmp(f->cmd, "#kbd_bs"))
+		else if (!strcmp(f->cmd, _KBD_BS))
 			edit_field(f_text, MIN_KEY_BACKSPACE);
-		else if (!strcmp(f->cmd, "#kbd_enter"))
+		else if (!strcmp(f->cmd, _KBD_ENTER))
 			edit_field(f_text, '\n');
 		else
 			edit_field(f_text, f->value[0]);
@@ -1279,7 +1276,7 @@ int do_kbd(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 }
 
 static void write_call_log(){
-	struct field *f_sent_exchange = get_field("#sent_exchange");
+	struct field *f_sent_exchange = get_field(_SENT_EXCHANGE);
 
 	logbook_add(contact_callsign, sent_rst, f_sent_exchange->value, received_rst, received_exchange); 
 	write_console(FONT_LOG, "\nQSO logged with ");
@@ -1288,16 +1285,16 @@ static void write_call_log(){
 	write_console(FONT_LOG, f_sent_exchange->value); 
 	write_console(FONT_LOG, "\n");
 
-	struct field *f_contest_serial = get_field("#contest_serial");
+	struct field *f_contest_serial = get_field(_CONTEST_SERIAL);
 	int  ctx_serial = atoi(f_contest_serial->value);
 	if (ctx_serial > 0){
 		ctx_serial++;
 		char sent[100], serial[100];
 
 		sprintf(sent, "%04d", ctx_serial);
-		set_field("#sent_exchange", sent);
+		set_field(_SENT_EXCHANGE, sent);
 		sprintf(serial, "%d", ctx_serial);
-		set_field("#contest_serial", serial);	
+		set_field(_CONTEST_SERIAL, serial);	
 	}
 	// wipe it clean, deffered for the time being
 	// call_wipe();
@@ -1309,7 +1306,7 @@ static void write_call_log(){
 static void interpret_log(char *text){
 	int i, j;
 	char *p, *q;
-	int mode = mode_id(get_field("r1:mode")->value);
+	int mode = mode_id(get_field(R1_MODE)->value);
 
 	p = text;
 	while(*p == ' ')
@@ -1326,7 +1323,7 @@ static void interpret_log(char *text){
 
 	if (sent_rst[0] == 0){
 		//the first must be something between 1 and 5
-		if ((mode == MODE_CW|| mode == MODE_CWR) && p[0] >= '1' && p[0] <= '5'){
+		if ((mode == MODE_CW || mode == MODE_CWR) && p[0] >= '1' && p[0] <= '5'){
 			sent_rst[0] = p[0];
 			sent_rst[1] = p[1];
 			sent_rst[2] = p[2];
@@ -1374,20 +1371,20 @@ void macro_get_var(char *var, char *s){
 	*s = 0;
 
 	if(!strcmp(var, "MYCALL"))
-		strcpy(s, get_field("#mycallsign")->value);
+		strcpy(s, get_field(_MYCALLSIGN)->value);
 	else if (!strcmp(var, "CALL"))
 		strcpy(s, contact_callsign);
 	else if (!strcmp(var, "SENTRST"))
 		sprintf(s, "%s", sent_rst);
 	else if (!strcmp(var, "GRID"))
-		strcpy(s, get_field("#mygrid")->value);
+		strcpy(s, get_field(_MYGRID)->value);
 	else if (!strcmp(var, "GRIDSQUARE")){
-		strcpy(var, get_field("#mygrid")->value);
+		strcpy(var, get_field(_MYGRID)->value);
 		var[4] = 0;
 		strcpy(s, var);
 	}
 	else if (!strcmp(var, "EXCH")){
-		strcpy(s, get_field("#sent_exchange")->value);
+		strcpy(s, get_field(_SENT_EXCHANGE)->value);
 	}
 	else if (!strcmp(var, "WIPE"))
 		call_wipe();
@@ -1419,22 +1416,22 @@ int do_macro(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 	if(event == GDK_BUTTON_PRESS){
 		int fn_key = atoi(f->cmd+3); // skip past the '#mf' and read the function key number
 
-		if (!strcmp(f->cmd, "#mfkbd")){
+		if (!strcmp(f->cmd, _MFKBD)){
 			set_ui(LAYOUT_KBD);
 			return 1;
-		} else if (!strcmp(f->cmd, "#mfqrz") && strlen(contact_callsign) > 0){
+		} else if (!strcmp(f->cmd, _MFQRZ) && strlen(contact_callsign) > 0){
 			qrz(contact_callsign);
 			return 1;
-		} else if (!strcmp(f->cmd, "#mfwipe")){
+		} else if (!strcmp(f->cmd, _MFWIPE)){
 			call_wipe();
 			return 1;
-		} else if (!strcmp(f->cmd, "#mflog")){
+		} else if (!strcmp(f->cmd, _MFLOG)){
 			write_call_log();
 			return 1;
 		} else 
 		 	macro_exec(fn_key, buff);
 	
-		mode = get_field("r1:mode")->value;
+		mode = get_field(R1_MODE)->value;
 
 		// add the end of transmission to the expanded buffer for the fldigi modes
 		if (!strcmp(mode, "RTTY") || !strcmp(mode, "PSK31")){
@@ -1443,12 +1440,12 @@ int do_macro(struct field *f, cairo_t *gfx, int event, int a, int b, int c){
 		}
 
 		if (!strcmp(mode, "FT8") && strlen(buff)){
-			ft8_tx(buff, atoi(get_field("#tx_pitch")->value));
-			set_field("#text_in", "");
-			//write_console(FONT_LOG_TX, buff);
+			ft8_tx(buff, atoi(get_field(_TX_PITCH)->value));
+			set_field(_TEXT_IN, "");
+			// write_console(FONT_LOG_TX, buff);
 		} else if (strlen(buff)){
-			set_field("#text_in", buff);
-			//put it in the text buffer and hope it gets transmitted!
+			set_field(_TEXT_IN, buff);
+			// put it in the text buffer and hope it gets transmitted!
 		}
 		return 1;
 	} else if (event == FIELD_DRAW){
@@ -1521,7 +1518,7 @@ void tx_on(int trigger){
 		return;
 	}
 
-	struct field *f = get_field("r1:mode");
+	struct field *f = get_field(R1_MODE);
 	if (f){
 		if (!strcmp(f->value, "CW"))
 			tx_mode = MODE_CW;
@@ -1564,9 +1561,9 @@ void tx_off(){
 		in_tx = 0;
 		sdr_request("key=up", response);
 		char response[20];
-		struct field *freq = get_field("r1:freq");
+		struct field *freq = get_field(R1_FREQ);
 		set_operating_freq(atoi(freq->value), response);
-		update_field(get_field("r1:freq"));
+		update_field(get_field(R1_FREQ));
 		printf("RX\n");
 	}
 	sound_input(0); // it is a low overhead call, might as well be sure
@@ -1591,7 +1588,7 @@ static int layout_handler(void* user, const char* section,
 }
 
 static void set_ui(int id){
-	struct field *f = get_field("#kbd_q");
+	struct field *f = get_field(_KBD_Q);
 
 	if (id == LAYOUT_KBD){
 		// the "#kbd" is out of screen, get it up and "#mf" down
@@ -1672,12 +1669,12 @@ static gboolean on_key_press (GtkWidget *widget, GdkEventKey *event, gpointer us
 				break;
 			case 'q':
 				tx_off();
-				set_field("#record", "OFF");
+				set_field(_RECORD, "OFF");
 				save_user_settings(1);
 				exit(0);
 				break;
 			case 'c':
-				f = get_field("#text_in");
+				f = get_field(_TEXT_IN);
 				clip = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
 				gtk_clipboard_set_text(clip, f->value, strlen(f->value));
 				break; 
@@ -1689,7 +1686,7 @@ static gboolean on_key_press (GtkWidget *widget, GdkEventKey *event, gpointer us
 				if (clip){
 					int i = 0;
 					gchar *text = gtk_clipboard_wait_for_text(clip);
-					f = get_field("#text_in");
+					f = get_field(_TEXT_IN);
 					if (text){
 						i = strlen(f->value);
 						while(i < MAX_FIELD_LENGTH-1 && *text){
@@ -1738,25 +1735,21 @@ static gboolean on_key_press (GtkWidget *widget, GdkEventKey *event, gpointer us
 				edit_field(f_focus, MIN_KEY_DOWN);
 			}
 			break;
-		#ifdef N8ME
 		case MIN_KEY_CONTROL:
-		#else
-		case 65507:
-		#endif
 			key_modifier |= event->keyval;
 			// printf("key_modifier set to %d\n", key_modifier);
 			break;
 		default:
 			// by default, all text goes to the text_input control
 			if (event->keyval == MIN_KEY_ENTER)
-				edit_field(get_field("#text_in"), '\n');
+				edit_field(get_field(_TEXT_IN), '\n');
 			else if (MIN_KEY_F1 <= event->keyval && event->keyval <= MIN_KEY_F12){
 				int fn_key = event->keyval - MIN_KEY_F1 + 1;
 				char fname[10];
 				sprintf(fname, "#mf%d", fn_key);
 				do_macro(get_field(fname), NULL, GDK_BUTTON_PRESS, 0, 0, 0);
 			} else
-				edit_field(get_field("#text_in"), event->keyval);
+				edit_field(get_field(_TEXT_IN), event->keyval);
 			// if (f_focus)
 			// 	edit_field(f_focus, event->keyval); 
 			// printf("key = %d (%c)\n", event->keyval, (char)event->keyval); 	
@@ -1768,13 +1761,13 @@ static gboolean on_scroll (GtkWidget *widget, GdkEventScroll *event, gpointer da
 	
 	if (f_focus){
 		if (event->direction == 0){
-    		if (!strcmp(get_field("reverse_scrolling")->value, "ON")){
+    		if (!strcmp(get_field(REVERSE_SCROLLING)->value, "ON")){
 	  			edit_field(f_focus, MIN_KEY_DOWN);
     		} else {
 		  		edit_field(f_focus, MIN_KEY_UP);
     		}
 		} else {
-    		if (!strcmp(get_field("reverse_scrolling")->value, "ON")){
+    		if (!strcmp(get_field(REVERSE_SCROLLING)->value, "ON")){
 				edit_field(f_focus, MIN_KEY_UP);
     		} else {
 				edit_field(f_focus, MIN_KEY_DOWN);
@@ -1963,7 +1956,7 @@ static void query_swr(){
 
 	if (!in_tx)
 		return;
-	if(i2cbb_read_i2c_block_data(0x8, 0, 4, response) == -1)
+	if (i2cbb_read_i2c_block_data(0x8, 0, 4, response) == -1)
 		return;
 
 	vfwd = vref = 0;
@@ -1975,9 +1968,9 @@ static void query_swr(){
 	else
 		vswr = (10*(vfwd + vref))/(vfwd-vref);
 	sprintf(buff,"%d", (vfwd * 40)/68);
-	set_field("#fwdpower", buff);		
+	set_field(_FWDPOWER, buff);		
 	sprintf(buff, "%d", vswr);
-	set_field("#vswr", buff);
+	set_field(_VSWR, buff);
 }
 
 static void hw_init(){
@@ -2006,11 +1999,11 @@ void hamlib_tx(int tx_input){
 }
 
 int get_cw_delay(){
-	return atoi(get_field("#cwdelay")->value);
+	return atoi(get_field(_CWDELAY)->value);
 }
 
 int get_cw_input_method(){
-	struct field *f = get_field("#cwinput");
+	struct field *f = get_field(_CWINPUT);
 	if (!strcmp(f->value, "KEYBOARD"))
 		return CW_KBD;
 	else if (!strcmp(f->value, "IAMBIC"))
@@ -2022,12 +2015,12 @@ int get_cw_input_method(){
 }
 
 int get_pitch(){
-	struct field *f = get_field("rx_pitch");
+	struct field *f = get_field(RX_PITCH);
 	return atoi(f->value);
 }
 
 int get_cw_tx_pitch(){
-	struct field *f = get_field("#tx_pitch");
+	struct field *f = get_field(_TX_PITCH);
 	return atoi(f->value);
 }
 
@@ -2036,19 +2029,19 @@ int get_data_delay(){
 }
 
 int get_wpm(){
-	struct field *f = get_field("#tx_wpm");
+	struct field *f = get_field(_TX_WPM);
 	return atoi(f->value);
 }
 
 long get_freq(){
-	return atol(get_field("r1:freq")->value);
+	return atol(get_field(R1_FREQ)->value);
 }
 
 static void set_bandwidth(int hz){
 	char buff[10], bw_str[10];
 	int low, high;
-	struct field *f_mode = get_field("r1:mode");
-	struct field *f_pitch = get_field("rx_pitch");
+	struct field *f_mode = get_field(R1_MODE);
+	struct field *f_pitch = get_field(RX_PITCH);
 
 	switch(mode_id(f_mode->value)){
 		case MODE_CW:
@@ -2056,20 +2049,20 @@ static void set_bandwidth(int hz){
 			low = atoi(f_pitch->value) - hz/2;
 			high = atoi(f_pitch->value) + hz/2;
 			sprintf(bw_str, "%d", high - low);
-			set_field("#bw_cw", bw_str);
+			set_field(_BW_CW, bw_str);
 			break;
 		case MODE_LSB:
 		case MODE_USB:
 			low = 300;
 			high = low + hz;
 			sprintf(bw_str, "%d", high - low);
-			set_field("#bw_voice", bw_str);
+			set_field(_BW_VOICE, bw_str);
 			break;
 		case MODE_DIGITAL:
 			low = atoi(f_pitch->value) - (hz/2);
 			high = atoi(f_pitch->value) + (hz/2);
 			sprintf(bw_str, "%d", high - low);
-			set_field("#bw_digital", bw_str);
+			set_field(_BW_DIGITAL, bw_str);
 			break;
 		case MODE_FT8:
 			low = 50;
@@ -2087,13 +2080,13 @@ static void set_bandwidth(int hz){
 
 	//now set the bandwidth
 	sprintf(buff, "%d", low);
-	set_field("r1:low", buff);
+	set_field(R1_LOW, buff);
 	sprintf(buff, "%d", high);
-	set_field("r1:high", buff);
+	set_field(R1_HIGH, buff);
 }
 
 static void set_mode(char *mode){
-	struct field *f = get_field("r1:mode");
+	struct field *f = get_field(R1_MODE);
 	char umode[10], bw_str[10];
 	int i;
 
@@ -2101,20 +2094,20 @@ static void set_mode(char *mode){
 		umode[i] = toupper(*mode++);
 	umode[i] = 0;
 
-	if(!set_field("r1:mode", umode)){
+	if(!set_field(R1_MODE, umode)){
 		int new_bandwidth = 3000;
 	
 		switch(mode_id(f->value)){
 			case MODE_CW:
 			case MODE_CWR:
-				new_bandwidth = atoi(get_field("#bw_cw")->value);
+				new_bandwidth = atoi(get_field(_BW_CW)->value);
 				break;
 			case MODE_USB:
 			case MODE_LSB:
-				new_bandwidth = atoi(get_field("#bw_voice")->value);
+				new_bandwidth = atoi(get_field(_BW_VOICE)->value);
 				break;
 			case MODE_DIGITAL:
-				new_bandwidth = atoi(get_field("#bw_digital")->value);
+				new_bandwidth = atoi(get_field(_BW_DIGITAL)->value);
 				break;
 			case MODE_FT8:
 				new_bandwidth = 4000;
@@ -2127,7 +2120,7 @@ static void set_mode(char *mode){
 }
 
 static void get_mode(char *mode){
-	struct field *f = get_field("r1:mode");
+	struct field *f = get_field(R1_MODE);
 	strcpy(mode, f->value);
 }
 
@@ -2229,7 +2222,7 @@ static gboolean ui_tick(gpointer gook){
 		update_field(f);
 
 		if (digitalRead(ENC1_SW) == 0)
-				focus_field(get_field(R1_VOLUME));
+            focus_field(get_field(R1_VOLUME));
 
 		if (record_start)
 			update_field(get_field(_RECORD));
@@ -2369,7 +2362,7 @@ static void ui_init(int argc, char *argv[]){
 
 
 int get_tx_data_byte(char *c){
-	//take out the first byte and return it to the modem
+	// take out the first byte and return it to the modem
 	struct field *f = get_field("#text_in");
 	int length = strlen(f->value);
 
@@ -2377,24 +2370,24 @@ int get_tx_data_byte(char *c){
 		return 0;
 	if (length){
 		*c = f->value[0];
-		//now shift the buffer down, hopefully, this copies the trailing null too
+		// now shift the buffer down, hopefully, this copies the trailing null too
 		for (int i = 0; i < length; i++)
 			f->value[i] = f->value[i+1];
 	}
 	f->is_dirty = 1;
 	f->update_remote = 1;
-	//update_field(f);
+	// update_field(f);
 	return length;
 }
 
 int get_tx_data_length(){
-	struct field *f = get_field("#text_in");
+	struct field *f = get_field(_TEXT_IN);
 
 	if (strlen(f->value) == 0)
 		return 0;
 
 	if (f->value[0] != COMMAND_ESCAPE)
-		return strlen(get_field("#text_in")->value);
+		return strlen(get_field(_TEXT_IN)->value);
 	else
 		return 0;
 }
@@ -2417,9 +2410,9 @@ static void change_band(char *request){
 		return;
 
 	// find out the tuned frequency
-	struct field *f = get_field("r1:freq");
+	struct field *f = get_field(R1_FREQ);
 	old_freq = atol(f->value);
-	f = get_field("r1:mode");
+	f = get_field(R1_MODE);
 	int old_mode = mode_id(f->value);
 	if (old_mode == -1)
 		return;
@@ -2433,7 +2426,7 @@ static void change_band(char *request){
 	if (stack < 0 || stack >= STACK_DEPTH)
 		stack = 0;
 	if (old_band < max_bands){
-		//u pdate the old band setting 
+		// update the old band setting 
 		if (stack >= 0 && stack < STACK_DEPTH){
 				band_stack[old_band].freq[stack] = old_freq;
 				band_stack[old_band].mode[stack] = old_mode;
@@ -2452,13 +2445,13 @@ static void change_band(char *request){
 	sprintf(buff, "%d", band_stack[new_band].freq[stack]);
 	char resp[100];
 	set_operating_freq(band_stack[new_band].freq[stack], resp);
-	set_field("r1:freq", buff);
+	set_field(R1_FREQ, buff);
 	set_mode(mode_name[band_stack[new_band].mode[stack]]);	
 	// set_field("r1:mode", mode_name[band_stack[new_band].mode[stack]]);	
 
 	// this fixes bug with filter settings not being applied after a band change, not sure why it's a bug - k3ng 2022-09-03
-	set_field("r1:low",get_field("r1:low")->value);
-	set_field("r1:high",get_field("r1:high")->value);
+	set_field(R1_LOW, get_field(R1_LOW)->value);
+	set_field(R1_HIGH, get_field(R1_HIGH)->value);
 
 	abort_tx();
 }
@@ -2471,10 +2464,10 @@ static void meter_calibrate(){
 	"2. Adjust the drive until you see 40 watts on the power meter\n"
 	"3. Press the tuning knob to confirm.\n");
 
-	set_field("r1:freq", "7035000");
+	set_field(R1_FREQ, "7035000");
 	set_mode("CW");	
-	struct field *f_bridge = get_field("bridge");
-	set_field("bridge", "100");	
+	struct field *f_bridge = get_field(BRIDGE);
+	set_field(BRIDGE, "100");	
 	focus_field(f_bridge);
 }
 
@@ -2483,12 +2476,16 @@ void do_cmd(const char *cmd){
 	
 	strcpy(request, cmd);			// don't mangle the original, thank you
 
+    char left[20], right[20];
+    bool haveEqual = parseEqual(cmd, left, right);
+    
+
 	if (!strcmp(request, "#close")){
 		gtk_window_iconify(GTK_WINDOW(window));
 	}
 	else if (!strcmp(request, "#off")){
 		tx_off();
-		set_field("#record", "OFF");
+		set_field(_RECORD, "OFF");
 		save_user_settings(1);
 		exit(0);
 	}
@@ -2499,36 +2496,36 @@ void do_cmd(const char *cmd){
 		tx_off();
 	}
 	else if (!strncmp(request, "#rit", 4))
-		update_field(get_field("r1:freq"));
+		update_field(get_field(R1_FREQ));
 	else if (!strncmp(request, "#split", 5)){
-		update_field(get_field("r1:freq"));	
-		if (!strcmp(get_field("#vfo")->value, "B"))
-			set_field("#vfo", "A");
+		update_field(get_field(R1_FREQ));	
+		if (!strcmp(get_field(_VFO)->value, "B"))
+			set_field(_VFO, "A");
 	}
 	else if (!strcmp(request, "#vfo=B")){
-		struct field *f = get_field("r1:freq");
-		struct field *vfo = get_field("#vfo");
-		struct field *vfo_a = get_field("#vfo_a_freq");
-		struct field *vfo_b = get_field("#vfo_b_freq");
+		struct field *f = get_field(R1_FREQ);
+		struct field *vfo = get_field(_VFO);
+		struct field *vfo_a = get_field(_VFO_A_FREQ);
+		struct field *vfo_b = get_field(_VFO_B_FREQ);
 		if (!strcmp(vfo->value, "B")){
 			// vfo_a_freq = atoi(f->value);
 			strcpy(vfo_a->value, f->value);
 			// sprintf(buff, "%d", vfo_b_freq);
-			set_field("r1:freq", vfo_b->value);
+			set_field(R1_FREQ, vfo_b->value);
 			settings_updated++;
 		}
 	}
 	else if (!strcmp(request, "#vfo=A")){
-		struct field *f = get_field("r1:freq");
-		struct field *vfo = get_field("#vfo");
-		struct field *vfo_a = get_field("#vfo_a_freq");
-		struct field *vfo_b = get_field("#vfo_b_freq");
+		struct field *f = get_field(R1_FREQ);
+		struct field *vfo = get_field(_VFO);
+		struct field *vfo_a = get_field(_VFO_A_FREQ);
+		struct field *vfo_b = get_field(_VFO_B_FREQ);
 		// printf("vfo old %s, new %s\n", vfo->value, request);
 		if (!strcmp(vfo->value, "A")){
 			// vfo_b_freq = atoi(f->value);
 			strcpy(vfo_b->value, f->value);
 			// sprintf(buff, "%d", vfo_a_freq);
-			set_field("r1:freq", vfo_a->value);
+			set_field(R1_FREQ, vfo_a->value);
 			settings_updated++;
 		}
 	} else if (!strcmp(request, "#step=1M"))
@@ -2546,6 +2543,7 @@ void do_cmd(const char *cmd){
 		tuning_step = 10;
 
 	// spectrum bandwidth
+    #if 0
 	else if (!strcmp(request, "#span=2.5K"))
 		spectrum_span = 2500;
 	else if (!strcmp(request, "#span=6K"))
@@ -2554,7 +2552,12 @@ void do_cmd(const char *cmd){
 		spectrum_span = 10000;
 	else if (!strcmp(request, "#span=25K"))
 		spectrum_span = 25000;
-		
+    #endif
+    if (haveEqual && !strcmp(left, "#span")) {
+        right[strlen(right) - 1] = '\0';
+        spectrum_span = (int) (atof(right) * 1000);
+    }
+    		
 	// handle the band stacking
 	else if (!strcmp(request, "#80m") || 
 		!strcmp(request, "#40m") || 

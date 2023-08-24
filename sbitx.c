@@ -16,6 +16,7 @@
 #include <wiringPi.h>
 #include <wiringSerial.h>
 
+#include "command_str.h"
 #include "i2cbb.h"
 #include "ini.h"
 #include "panafall.h"
@@ -1352,9 +1353,9 @@ void sdr_request(char *request, char *response){
 		else
 			tr_switch_v2(0);
 		strcpy(response, "ok");
-	} else if (!strcmp(cmd, "rx_pitch")){
+	} else if (!strcmp(cmd, RX_PITCH)){
 		rx_pitch = atoi(value);
-		printf("rx_pitch set to %d\n", rx_pitch);
+		// printf("rx_pitch set to %d\n", rx_pitch);
 	} else if (!strcmp(cmd, "tx_gain")){
 		tx_gain = atoi(value);
 		if(in_tx)
@@ -1363,9 +1364,9 @@ void sdr_request(char *request, char *response){
     tx_drive = atoi(value);
 		if(in_tx)
 			set_tx_power_levels();	
-	} else if (!strcmp(cmd, "bridge")){
+	} else if (!strcmp(cmd, BRIDGE)){
     	bridge_compensation = atoi(value);
-		printf("bridge compensation = %d\n", bridge_compensation);
+		// printf("bridge compensation = %d\n", bridge_compensation);
 	} else if(!strcmp(cmd, "r1:gain")){
 		rx_gain = atoi(value);
 		if(!in_tx)

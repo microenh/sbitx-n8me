@@ -34,14 +34,13 @@ void sdr_modulation_update(int32_t *samples, int count, double scale_up){
 	}
 }
 
-
 static void draw_modulation(struct field *f, cairo_t *gfx){
 
 	int y, sub_division, i, grid_height;
 	long	freq, freq_div;
 	char	freq_text[20];
 
-	// f = get_field("spectrum");
+	// f = get_field(SPECTRUM);
 	sub_division = f->width / 10;
 	grid_height = f->height - 10;
 
@@ -65,8 +64,7 @@ static void draw_modulation(struct field *f, cairo_t *gfx){
 	cairo_stroke(gfx);
 
 	// start the plot
-	cairo_set_source_rgb(gfx, palette[SPECTRUM_PLOT][0], 
-		palette[SPECTRUM_PLOT][1], palette[SPECTRUM_PLOT][2]);
+	cairo_set_source_rgb(gfx, palette[SPECTRUM_PLOT][0], palette[SPECTRUM_PLOT][1], palette[SPECTRUM_PLOT][2]);
 	cairo_move_to(gfx, f->x + f->width, f->y + grid_height);
 
 
@@ -100,6 +98,7 @@ void init_waterfall(){
 	}
 
     #if 0
+    // colors initial waterfall area
     for (int i = 0; i < f->width; i++)
 		for (int j = 0; j < f->height; j++){
 			int row = j * f->width * 3;
@@ -111,7 +110,7 @@ void init_waterfall(){
     #endif
 
 	// if (waterfall_pixbuf)
-	// 	g_object_ref(waterfall_pixbuf);
+	//     g_object_ref(waterfall_pixbuf);
 
     waterfall_pixbuf = gdk_pixbuf_new_from_data(waterfall_map,
         // format,          alpha?, bit,  width,    height,    rowstride,  destryfn, data
@@ -191,7 +190,7 @@ static void draw_spectrum_grid(struct field *f_spectrum, cairo_t *gfx){
 	cairo_stroke(gfx);
 }
 
-static const double BIN_PER_HZ = 1.0 / 46.875;
+static const double BIN_PER_HZ = 1.0 / 46.875; // reciprocal of Hz/Bin
 
 void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 	int y, sub_division, i, grid_height, bw_high, bw_low, pitch;
@@ -267,7 +266,7 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 	cairo_set_source_rgb(gfx, palette[COLOR_TEXT_MUTED][0], palette[COLOR_TEXT_MUTED][1], palette[COLOR_TEXT_MUTED][2]);
 	long f_start = freq - (4 * freq_div) - display_ofs; 
 	for (i = f->width/10; i < f->width; i += f->width/10){
-		if ((span == 25) || (span == 10)){
+		if (span >= 10){
 			sprintf(freq_text, "%ld", f_start/1000);
 		} else {
 			float f_start_temp = (((float)f_start/1000000.0) - ((int)(f_start/1000000))) *1000;
@@ -304,7 +303,7 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 		// y axis is the power in db of each bin, scaled to 80 db
 		y = ((spectrum_plot[i] + waterfall_offset) * f->height) / 80; 
 		// limit y inside the spectrum display box
-		if ( y <  0)
+		if (y <  0)
 			y = 0;
 		if (y > f->height)
 			y = f->height - 1;

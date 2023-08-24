@@ -4,6 +4,8 @@
  * Based on Mark Wyborski's work, re-written for C by Ashhar Farhan, VU2ESE
  */
 
+#include <stdint.h>
+
 void i2cbb_init(uint8_t pin_number_sda, uint8_t pin_number_scl);
 
 // This executes the SMBus “write byte” protocol, returning negative errno else zero on success.

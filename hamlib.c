@@ -1,8 +1,6 @@
 #include <arpa/inet.h>
 #include <complex.h>
-#include <complex.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <fcntl.h>
 #include <fftw3.h>
 #include <math.h>

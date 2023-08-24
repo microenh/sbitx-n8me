@@ -16,7 +16,7 @@ static const char RX_TX_SEL[] = "RX/TX";
 static const char STATUS_SEL[] = "status";
 static const char TUNE_STEP_SEL[] = "1M/100K/10K/1K/100H/10H";
 static const char A_B_SEL[] = "A/B";
-static const char SPECT_WIDTH_SEL[] = "25K/10K/6K/2.5K";
+static const char SPECT_WIDTH_SEL[] = "22K/20K/15K/10K/6K/5K/4K/3K/2K/1K";
 static const char NOTHING_SEL[] = "nothing valuable";
 static const char MOUSE_SEL[] = "BLANK/LEFT/RIGHT/CROSSHAIR";
 static const char KEYER_SEL[] = "KEYBOARD/IAMBIC/IAMBICB/STRAIGHT";
@@ -53,7 +53,7 @@ struct field main_controls[] = {
 	// top row
 	{_STEP, NULL, 400, 0 ,50, 50, "STEP", 1, "10Hz", FIELD_SELECTION, FONT_FIELD_VALUE, TUNE_STEP_SEL, 0,0,0},
 	{_VFO, NULL, 450, 0 ,50, 50, "VFO", 1, "A", FIELD_SELECTION, FONT_FIELD_VALUE, A_B_SEL, 0,0,0},
-	{_SPAN, NULL, 500, 0 ,50, 50, "SPAN", 1, "25K", FIELD_SELECTION, FONT_FIELD_VALUE,  SPECT_WIDTH_SEL, 0,0,0},
+	{_SPAN, NULL, 500, 0 ,50, 50, "SPAN", 1, "24K", FIELD_SELECTION, FONT_FIELD_VALUE,  SPECT_WIDTH_SEL, 0,0,0},
 
 	{SPECTRUM, do_spectrum, 400, 80, 400, 100, "Spectrum ", 70, "7000 KHz", FIELD_STATIC, FONT_SMALL, NULL, 0,0,0},  
 	{_STATUS, do_status, 400, 51, 400, 29, "STATUS", 70, "7000 KHz", FIELD_STATIC, FONT_SMALL,  STATUS_SEL, 0,0,0},  
@@ -327,6 +327,18 @@ int set_field(const char * const id, char *value){
 	do_cmd(buff);
 	update_field(f);
 	return 0;
+}
+
+bool parseEqual(const char const *text, char *left, char *right) {
+    char *found = strchr(text, '=');
+    if (found) {
+        memcpy(left, text, found - text);
+        left[found - text + 1] = '\0';
+        strcpy(right, found + 1);
+        return true;
+    } else {
+        return false;
+    }
 }
 
 

@@ -11,8 +11,8 @@
 
 #include "fields.h"
 #include "fonts.h"
-#include "sdr.h"
 #include "sdr_ui.h"
+#include "sdr.h"
 
 #include "ft8_lib/common/common.h"
 #include "ft8_lib/common/debug.h"

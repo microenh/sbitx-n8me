@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <cairo.h>
 
 #define MAX_FIELD_LENGTH 128
@@ -54,3 +55,4 @@ int get_field_value_by_label(const char * const label, char *value);
 int remote_update_field(int i, char *text);
 int set_field(const char * const id, char *value);
 
+bool parseEqual(const char const *text, char *left, char *right); 

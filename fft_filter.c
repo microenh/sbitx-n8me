@@ -1,15 +1,15 @@
 #define _GNU_SOURCE 1
+#include "sdr.h"
 #include <assert.h>
-#include <stdlib.h>
-#include <pthread.h>
-#include <memory.h>
 #include <complex.h>
-#include <math.h>
-#include <fftw3.h>
 #include <fcntl.h>
+#include <fftw3.h>
+#include <math.h>
+#include <memory.h>
+#include <pthread.h>
+#include <stdlib.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include "sdr.h"
 
 // Modified Bessel function of the 0th kind, used by the Kaiser window
 const float i0(float const z){

@@ -5,19 +5,20 @@
  *      Author: "Marek Wyborski"
  */
 
+#include "i2cbb.h"
+
+#include <complex.h>
+#include <fcntl.h> 
+#include <fftw3.h>
+#include <linux/types.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
-#include <fcntl.h> 
-#include <math.h>
-#include <complex.h>
-#include <fftw3.h>
+#include <time.h>
 #include <unistd.h>
 #include <wiringPi.h>
-#include <linux/types.h>
-#include <stdint.h>
-#include <time.h>
-#include "i2cbb.h"
 
 static uint8_t PIN_SDA;
 static uint8_t PIN_SCL;

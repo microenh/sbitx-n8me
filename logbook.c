@@ -1,9 +1,7 @@
 #include <arpa/inet.h>
-#include <complex.h>
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h> 
-#include <fftw3.h>
 #include <linux/types.h>
 #include <math.h>
 #include <netinet/in.h>
@@ -11,19 +9,13 @@
 #include <sqlite3.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdint.h>
-#include <stdio.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <sys/types.h>
-#include <time.h>
 #include <time.h>
 #include <unistd.h>
-#include <wiringPi.h>
-#include <wiringSerial.h>
 
 #include "fields.h"
 #include "logbook.h"
