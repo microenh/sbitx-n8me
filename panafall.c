@@ -195,7 +195,6 @@ static const double BIN_PER_HZ = 1.0 / 46.875; // reciprocal of Hz/Bin
 void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 	int y, sub_division, i, grid_height, bw_high, bw_low, pitch;
 	float span;
-	struct field *f;
 	long freq, freq_div;
 	char freq_text[20];
 
@@ -225,7 +224,7 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 	// calculate the position of bandwidth strip
 	int filter_start, filter_width;
 	if(!strcmp(mode_f->value, "CWR") || !strcmp(mode_f->value, "LSB")){
-        // LSB
+        // LSB modes
 	 	filter_start = f_spectrum->x + (f_spectrum->width/2) - ((f_spectrum->width * bw_high)/(span * 1000)) + filter_ofs; 
 		if (filter_start < f_spectrum->x){
 	 	    filter_width = ((f_spectrum->width * (bw_high - bw_low))/(span * 1000)) - (f_spectrum->x - filter_start); 
@@ -237,7 +236,7 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 			filter_width = f_spectrum->x + f_spectrum->width - filter_start;
 		pitch = f_spectrum->x + (f_spectrum->width/2) - ((f_spectrum->width * pitch)/(span * 1000)) + filter_ofs;
 	} else {
-        // USB
+        // USB modes
         fc_bin = -fc_bin;
         filter_ofs = -filter_ofs;
         display_ofs = -display_ofs;
@@ -249,23 +248,23 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 			filter_width = f_spectrum->x + f_spectrum->width - filter_start;
 		pitch = f_spectrum->x + (f_spectrum->width/2) + ((f_spectrum->width * pitch)/(span * 1000)) + filter_ofs;
 	}
+    if(!strcmp(mode_f->value, "USB") || !strcmp(mode_f->value, "LSB") || !strcmp(mode_f->value, "FT8")){ // for LSB, USB and FT8 draw pitch line at center (carrier freq)
+        pitch = f_spectrum->x + (f_spectrum->width/2) + filter_ofs;
+    }
 
 	// clear the spectrum	
-	f = f_spectrum;
-	fill_rect(gfx, f->x, f->y, f->width, f->height, SPECTRUM_BACKGROUND);
-	// cairo_stroke(gfx);
+	fill_rect(gfx, f_spectrum->x, f_spectrum->y, f_spectrum->width, f_spectrum->height, SPECTRUM_BACKGROUND);
+	// fill_rect(gfx, f_spectrum->x, f_spectrum->y, f_spectrum->width, grid_height, SPECTRUM_BACKGROUND);
 
     // background for the selected bandwidth
-	fill_rect(gfx, filter_start, f->y, filter_width, grid_height, SPECTRUM_BANDWIDTH);  
-	// cairo_stroke(gfx);
+	fill_rect(gfx, filter_start, f_spectrum->y, filter_width, grid_height, SPECTRUM_BANDWIDTH);  
 
 	draw_spectrum_grid(f_spectrum, gfx);
-	// f = f_spectrum;
 
 	// draw the frequency readout at the bottom
 	cairo_set_source_rgb(gfx, palette[COLOR_TEXT_MUTED][0], palette[COLOR_TEXT_MUTED][1], palette[COLOR_TEXT_MUTED][2]);
 	long f_start = freq - (4 * freq_div) - display_ofs; 
-	for (i = f->width/10; i < f->width; i += f->width/10){
+	for (i = f_spectrum->width/10; i < f_spectrum->width; i += f_spectrum->width/10){
 		if (span >= 10){
 			sprintf(freq_text, "%ld", f_start/1000);
 		} else {
@@ -273,12 +272,11 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 			sprintf(freq_text, "%5.1f", f_start_temp);
 		}
 		int off = measure_text(gfx, freq_text, FONT_SMALL) / 2;
-		draw_text(gfx, f->x + i - off, f->y+grid_height, freq_text, FONT_SMALL);
+		draw_text(gfx, f_spectrum->x + i - off, f_spectrum->y + grid_height, freq_text, FONT_SMALL);
 		f_start += freq_div;
 	}
 
 	// we only plot the second half of the bins (on the lower sideband)
-	int last_y = 100;
 
 	int n_bins = (int)((1.0 * spectrum_span) * BIN_PER_HZ);
 	// the center frequency is at the center of the lower sideband,
@@ -287,11 +285,11 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 	int starting_bin = (3 *MAX_BINS) / 4 - n_bins / 2 + fc_bin;
 	int ending_bin = starting_bin + n_bins; 
 
-	float x_step = (1.0 * f->width ) / n_bins;
+	float x_step = (1.0 * f_spectrum->width ) / n_bins;
 
 	// start the plot
 	cairo_set_source_rgb(gfx, palette[SPECTRUM_PLOT][0], palette[SPECTRUM_PLOT][1], palette[SPECTRUM_PLOT][2]);
-	cairo_move_to(gfx, f->x + f->width, f->y + grid_height);
+	cairo_move_to(gfx, f_spectrum->x + f_spectrum->width, f_spectrum->y + grid_height);
 
 	float x = 0;
 	int j = 0;
@@ -301,40 +299,33 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 		// the center fft bin is at zero, from MAX_BINS/2 onwards,
 		// the bins are at lowest frequency (-ve frequency)
 		// y axis is the power in db of each bin, scaled to 80 db
-		y = ((spectrum_plot[i] + waterfall_offset) * f->height) / 80; 
+		y = ((spectrum_plot[i] + waterfall_offset) * f_spectrum->height) / 80; 
 		// limit y inside the spectrum display box
 		if (y <  0)
 			y = 0;
-		if (y > f->height)
-			y = f->height - 1;
+		if (y > f_spectrum->height)
+			y = f_spectrum->height - 1;
 		// the plot should be increase upwards
-		cairo_line_to(gfx, f->x + f->width - (int)x, f->y + grid_height - y);
+		cairo_line_to(gfx, f_spectrum->x + f_spectrum->width - (int)x, f_spectrum->y + grid_height - y);
 
 		// fill the waterfall
 		for (int k = 0; k <= 1 + (int)x_step; k++)
-			wf[k + f->width - (int)x] = (y * 100)/grid_height;
+			wf[k + f_spectrum->width - (int)x] = (y * 100)/grid_height;
 		x += x_step;
 	}
 	cairo_stroke(gfx);
  
     // draw carrier (USB, LSB, FT8) or rx pitch
-	if (pitch >= f_spectrum->x){
-    	cairo_set_source_rgb(gfx, palette[SPECTRUM_PITCH][0],palette[SPECTRUM_PITCH][1], palette[SPECTRUM_PITCH][2]);
-    	if(!strcmp(mode_f->value, "USB") || !strcmp(mode_f->value, "LSB") || !strcmp(mode_f->value, "FT8")){ // for LSB, USB and FT8 draw pitch line at center (carrier freq)
-	    	cairo_move_to(gfx, f->x + (f->width/2) + filter_ofs, f->y);
-	    	cairo_line_to(gfx, f->x + (f->width/2) + filter_ofs, f->y + grid_height); 
-    	} else {
-	    	cairo_move_to(gfx, pitch, f->y);
-	   	 	cairo_line_to(gfx, pitch, f->y + grid_height); 
-    	}
-   		cairo_stroke(gfx);
-	}
+    cairo_set_source_rgb(gfx, palette[SPECTRUM_PITCH][0],palette[SPECTRUM_PITCH][1], palette[SPECTRUM_PITCH][2]);
+    cairo_move_to(gfx, pitch, f_spectrum->y);
+    cairo_line_to(gfx, pitch, f_spectrum->y + grid_height); 
+    cairo_stroke(gfx);
 
 	// draw the needle
     #if 0
 	for (struct rx *r = rx_list; r; r = r->next){
-		int needle_x  = (f->width*(MAX_BINS/2 - r->tuned_bin))/(MAX_BINS/2) - filter_ofs;
-		fill_rect(gfx, f->x + needle_x, f->y, 1, grid_height,  SPECTRUM_NEEDLE);
+		int needle_x  = (f_spectrum->width*(MAX_BINS/2 - r->tuned_bin))/(MAX_BINS/2) - filter_ofs;
+		fill_rect(gfx, f_spectrum->x + needle_x, f_spectrum->y, 1, grid_height,  SPECTRUM_NEEDLE);
 	}
     #endif
 
