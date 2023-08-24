@@ -1232,12 +1232,7 @@ void setup(void){
 	tx_init(7000000, MODE_LSB, -3000, -150);
 
 	// detect the version of sbitx
-	#ifdef N8ME
 	if (i2cbb_read_byte_data(0x8, 0))
-	#else
-	uint8_t response[4];
-	if(i2cbb_read_i2c_block_data(0x8, 0, 4, response) == -1)
-	#endif
 		sbitx_version = SBITX_DE;
 	else
 		sbitx_version = SBITX_V2;

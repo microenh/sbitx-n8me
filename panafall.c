@@ -212,8 +212,10 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 	span = atof(get_field(_SPAN)->value);
 	bw_high = atoi(get_field(R1_HIGH)->value);
 	bw_low = atoi(get_field(R1_LOW)->value);
-    int filter_center = (bw_low + bw_high) / 2;
-    int fc_bin = (int) (filter_center * BIN_PER_HZ);
+
+    int display_ofs = (bw_low + bw_high) / 2;
+    int fc_bin = (int) (display_ofs * BIN_PER_HZ);
+    int filter_ofs = (f_spectrum-> width * display_ofs)/(span * 1000);
 
 	grid_height = f_spectrum->height - ((font_table[FONT_SMALL].height * 4) / 3);
 	sub_division = f_spectrum->width / 10;
@@ -225,7 +227,7 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 	int filter_start, filter_width;
 	if(!strcmp(mode_f->value, "CWR") || !strcmp(mode_f->value, "LSB")){
         // LSB
-	 	filter_start = f_spectrum->x + (f_spectrum->width/2) - ((f_spectrum->width * bw_high)/(span * 1000)); 
+	 	filter_start = f_spectrum->x + (f_spectrum->width/2) - ((f_spectrum->width * bw_high)/(span * 1000)) + filter_ofs; 
 		if (filter_start < f_spectrum->x){
 	 	    filter_width = ((f_spectrum->width * (bw_high - bw_low))/(span * 1000)) - (f_spectrum->x - filter_start); 
 			filter_start = f_spectrum->x;
@@ -234,34 +236,36 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 		}
 		if (filter_width + filter_start > f_spectrum->x + f_spectrum->width)
 			filter_width = f_spectrum->x + f_spectrum->width - filter_start;
-		pitch = f_spectrum->x + (f_spectrum->width/2) - ((f_spectrum->width * pitch)/(span * 1000));
+		pitch = f_spectrum->x + (f_spectrum->width/2) - ((f_spectrum->width * pitch)/(span * 1000)) + filter_ofs;
 	} else {
         // USB
         fc_bin = -fc_bin;
-		filter_start = f_spectrum->x + (f_spectrum->width/2) + ((f_spectrum->width * bw_low)/(span * 1000)); 
+        filter_ofs = -filter_ofs;
+        display_ofs = -display_ofs;
+		filter_start = f_spectrum->x + (f_spectrum->width/2) + ((f_spectrum->width * bw_low)/(span * 1000)) + filter_ofs; 
 		if (filter_start < f_spectrum->x)
 			filter_start = f_spectrum->x;
 		filter_width = (f_spectrum->width * (bw_high-bw_low))/(span * 1000); 
 		if (filter_width + filter_start > f_spectrum->x + f_spectrum->width)
 			filter_width = f_spectrum->x + f_spectrum->width - filter_start;
-		pitch = f_spectrum->x + (f_spectrum->width/2) + ((f_spectrum->width * pitch)/(span * 1000));
+		pitch = f_spectrum->x + (f_spectrum->width/2) + ((f_spectrum->width * pitch)/(span * 1000)) + filter_ofs;
 	}
 
 	// clear the spectrum	
 	f = f_spectrum;
 	fill_rect(gfx, f->x, f->y, f->width, f->height, SPECTRUM_BACKGROUND);
-	cairo_stroke(gfx);
+	// cairo_stroke(gfx);
 
     // background for the selected bandwidth
 	fill_rect(gfx, filter_start, f->y, filter_width, grid_height, SPECTRUM_BANDWIDTH);  
-	cairo_stroke(gfx);
+	// cairo_stroke(gfx);
 
 	draw_spectrum_grid(f_spectrum, gfx);
 	// f = f_spectrum;
 
 	// draw the frequency readout at the bottom
 	cairo_set_source_rgb(gfx, palette[COLOR_TEXT_MUTED][0], palette[COLOR_TEXT_MUTED][1], palette[COLOR_TEXT_MUTED][2]);
-	long f_start = freq - (4 * freq_div); 
+	long f_start = freq - (4 * freq_div) - display_ofs; 
 	for (i = f->width/10; i < f->width; i += f->width/10){
 		if ((span == 25) || (span == 10)){
 			sprintf(freq_text, "%ld", f_start/1000);
@@ -269,8 +273,8 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 			float f_start_temp = (((float)f_start/1000000.0) - ((int)(f_start/1000000))) *1000;
 			sprintf(freq_text, "%5.1f", f_start_temp);
 		}
-		int off = measure_text(gfx, freq_text, FONT_SMALL)/2;
-		draw_text(gfx, f->x + i - off , f->y+grid_height , freq_text, FONT_SMALL);
+		int off = measure_text(gfx, freq_text, FONT_SMALL) / 2;
+		draw_text(gfx, f->x + i - off, f->y+grid_height, freq_text, FONT_SMALL);
 		f_start += freq_div;
 	}
 
@@ -284,7 +288,7 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 	int starting_bin = (3 *MAX_BINS) / 4 - n_bins / 2 + fc_bin;
 	int ending_bin = starting_bin + n_bins; 
 
-	float x_step = (1.0 * f->width )/n_bins;
+	float x_step = (1.0 * f->width ) / n_bins;
 
 	// start the plot
 	cairo_set_source_rgb(gfx, palette[SPECTRUM_PLOT][0], palette[SPECTRUM_PLOT][1], palette[SPECTRUM_PLOT][2]);
@@ -314,11 +318,12 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 	}
 	cairo_stroke(gfx);
  
+    // draw carrier (USB, LSB, FT8) or rx pitch
 	if (pitch >= f_spectrum->x){
     	cairo_set_source_rgb(gfx, palette[SPECTRUM_PITCH][0],palette[SPECTRUM_PITCH][1], palette[SPECTRUM_PITCH][2]);
-    	if(!strcmp(mode_f->value, "USB") || !strcmp(mode_f->value, "LSB")){ // for LSB and USB draw pitch line at center
-	    	cairo_move_to(gfx, f->x + (f->width/2), f->y);
-	    	cairo_line_to(gfx, f->x + (f->width/2), f->y + grid_height); 
+    	if(!strcmp(mode_f->value, "USB") || !strcmp(mode_f->value, "LSB") || !strcmp(mode_f->value, "FT8")){ // for LSB, USB and FT8 draw pitch line at center (carrier freq)
+	    	cairo_move_to(gfx, f->x + (f->width/2) + filter_ofs, f->y);
+	    	cairo_line_to(gfx, f->x + (f->width/2) + filter_ofs, f->y + grid_height); 
     	} else {
 	    	cairo_move_to(gfx, pitch, f->y);
 	   	 	cairo_line_to(gfx, pitch, f->y + grid_height); 
@@ -327,10 +332,12 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 	}
 
 	// draw the needle
+    #if 0
 	for (struct rx *r = rx_list; r; r = r->next){
-		int needle_x  = (f->width*(MAX_BINS/2 - r->tuned_bin))/(MAX_BINS/2);
+		int needle_x  = (f->width*(MAX_BINS/2 - r->tuned_bin))/(MAX_BINS/2) - filter_ofs;
 		fill_rect(gfx, f->x + needle_x, f->y, 1, grid_height,  SPECTRUM_NEEDLE);
 	}
+    #endif
 
     // [mee] 8/23/23 - already called from do_waterfall
     // draw_waterfall(get_field(WATERFALL), gfx);
