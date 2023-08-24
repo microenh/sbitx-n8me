@@ -5,12 +5,11 @@
 /*
 Overview:
 The SDR's core is quite simple:
-We convert the entire sampled band into frequency domain 
-(the stuff you see in the waterfalls) by simply passing 
-the I and Q samples to to a library called the FFT3W.
+We convert the entire sampled band into frequency domain (the stuff you see in the
+waterfalls) by simply passing the I and Q samples to to a library called the FFT3W.
 
-As the FFT turns time samples signals into their frequency bins, it the signals are spread on both sides
-of the 0 hz line. 
+As the FFT turns time samples signals into their frequency bins, it the signals
+are spread on both sides of the 0 hz line. 
 
 The FFT lines up not just amplitudes of signals at each frequency but also their phase.
 A reverse FFT will add up all these sinewaves and reproduce the signal.
@@ -27,11 +26,14 @@ and convert the signals back to time domain.
 The basic receiver is just that.
 
 HOW THE FILTER WORKS
-This is a little tricky, it took me some time to understand. 
+This is a little tricky, it took me some time to understand.
+
 To begin with understand that you can convert a series of time samples of a signal
 to frequency domain and convert it back to get back the original signal.
+
 Time and Frequency domains are just two ways to represent a signal. We hams are
 find it more convenient to handle frequency domain.
+
 We tune to a band, we schedule calls on some, we scan, etc. We all understand 
 the waterfall.
 
@@ -74,7 +76,7 @@ You can have any number of radios working with different slices of the spectrum.
 At the moment, only ssb (and CW as a single sideband signal) are demodulated.
 Each receiver is inserted a node in a linked list that starts at rx_list.
 
-Each receiver is defined by the struct rx. The rx 
+Each receiver is defined by the struct rx.
 Each receiver copies the fft_bins to by shifting it around to bring the desired 
 to baseband. 
 
@@ -88,7 +90,7 @@ extern float fft_bins[];
 extern int spectrum_plot[];
 extern struct filter *ssb;
 
-//vfo definitions
+// vfo definitions
 
 #define MAX_PHASE_COUNT (16385)
 struct vfo {
