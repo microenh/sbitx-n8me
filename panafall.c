@@ -192,16 +192,18 @@ static void draw_spectrum_grid(struct field *f_spectrum, cairo_t *gfx){
 
 static const double BIN_PER_HZ = 1.0 / 46.875; // reciprocal of Hz/Bin
 
-void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
-	int y, sub_division, i, grid_height, bw_high, bw_low, pitch;
+static int grid_height = 0, starting_bin, ending_bin, pitch, filter_start, filter_width;
+static float x_step;
+
+void init_spectrum(void) {
+    grid_height = 0;
+}
+
+static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
+	int y, sub_division, i, bw_high, bw_low;
 	float span;
 	long freq, freq_div;
 	char freq_text[20];
-
-	if (in_tx){
-		draw_modulation(f_spectrum, gfx);
-		return;
-	}
 
 	pitch = atoi(get_field(RX_PITCH)->value);
 	struct field *mode_f = get_field(R1_MODE);
@@ -222,7 +224,6 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 	freq_div = span * 100;  
 
 	// calculate the position of bandwidth strip
-	int filter_start, filter_width;
 	if(!strcmp(mode_f->value, "CWR") || !strcmp(mode_f->value, "LSB")){
         // LSB modes
 	 	filter_start = f_spectrum->x + (f_spectrum->width/2) - ((f_spectrum->width * bw_high)/(span * 1000)) + filter_ofs; 
@@ -252,14 +253,6 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
         pitch = f_spectrum->x + (f_spectrum->width/2) + filter_ofs;
     }
 
-	// clear the spectrum	
-	fill_rect(gfx, f_spectrum->x, f_spectrum->y, f_spectrum->width, f_spectrum->height, SPECTRUM_BACKGROUND);
-	// fill_rect(gfx, f_spectrum->x, f_spectrum->y, f_spectrum->width, grid_height, SPECTRUM_BACKGROUND);
-
-    // background for the selected bandwidth
-	fill_rect(gfx, filter_start, f_spectrum->y, filter_width, grid_height, SPECTRUM_BANDWIDTH);  
-
-	draw_spectrum_grid(f_spectrum, gfx);
 
 	// draw the frequency readout at the bottom
 	cairo_set_source_rgb(gfx, palette[COLOR_TEXT_MUTED][0], palette[COLOR_TEXT_MUTED][1], palette[COLOR_TEXT_MUTED][2]);
@@ -282,10 +275,33 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 	// the center frequency is at the center of the lower sideband,
 	// i.e, three-fourth way up the bins.
 	// int starting_bin = (3 *MAX_BINS) / 4 - n_bins / 2;
-	int starting_bin = (3 *MAX_BINS) / 4 - n_bins / 2 + fc_bin;
-	int ending_bin = starting_bin + n_bins; 
+	starting_bin = (3 *MAX_BINS) / 4 - n_bins / 2 + fc_bin;
+	ending_bin = starting_bin + n_bins; 
 
-	float x_step = (1.0 * f_spectrum->width ) / n_bins;
+	x_step = (1.0 * f_spectrum->width ) / n_bins;
+}
+
+void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
+
+	if (in_tx){
+		draw_modulation(f_spectrum, gfx);
+		return;
+	}
+
+    // if (!grid_height)
+        draw_spectrum_init(f_spectrum, gfx);
+
+	// clear the spectrum	
+	// fill_rect(gfx, f_spectrum->x, f_spectrum->y, f_spectrum->width, f_spectrum->height, SPECTRUM_BACKGROUND);
+	fill_rect(gfx, f_spectrum->x, f_spectrum->y, f_spectrum->width, grid_height, SPECTRUM_BACKGROUND);
+
+    // background for the selected bandwidth
+	fill_rect(gfx, filter_start, f_spectrum->y, filter_width, grid_height, SPECTRUM_BANDWIDTH);  
+
+	draw_spectrum_grid(f_spectrum, gfx);
+
+	// we only plot the second half of the bins (on the lower sideband)
+
 
 	// start the plot
 	cairo_set_source_rgb(gfx, palette[SPECTRUM_PLOT][0], palette[SPECTRUM_PLOT][1], palette[SPECTRUM_PLOT][2]);
@@ -293,7 +309,7 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 
 	float x = 0;
 	int j = 0;
-	for (i = starting_bin; i <= ending_bin; i++){
+	for (int i = starting_bin; i <= ending_bin; i++){
 		int y;
 
 		// the center fft bin is at zero, from MAX_BINS/2 onwards,
