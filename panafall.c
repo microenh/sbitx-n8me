@@ -192,15 +192,21 @@ static void draw_spectrum_grid(struct field *f_spectrum, cairo_t *gfx){
 
 static const double BIN_PER_HZ = 1.0 / 46.875; // reciprocal of Hz/Bin
 
-static int grid_height = 0, starting_bin, ending_bin, pitch, filter_start, filter_width;
+static int grid_height = 0, starting_bin, ending_bin, pitch_col, filter_start, filter_width;
 static float x_step;
 
-void init_spectrum(void) {
-    grid_height = 0;
-}
+// void init_spectrum(void) {
+//     grid_height = 0;
+// }
+
+#if 0
+static int old_span = -1, old_bw_low, old_bw_high, old_pitch;
+static long old_freq;
+static char old_mode[10];
+#endif
 
 static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
-	int y, sub_division, i, bw_high, bw_low;
+	int y, sub_division, i, bw_high, bw_low, pitch;
 	float span;
 	long freq, freq_div;
 	char freq_text[20];
@@ -212,6 +218,23 @@ static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
 	span = atof(get_field(_SPAN)->value);
 	bw_high = atoi(get_field(R1_HIGH)->value);
 	bw_low = atoi(get_field(R1_LOW)->value);
+
+    #if 0
+    if ((old_span == span)
+        && (old_bw_low == bw_low)
+        && (old_bw_high == bw_high)
+        && (old_pitch == pitch)
+        && (old_freq == freq)
+        && !strcmp(old_mode, mode_f->value)) 
+        return;
+
+    old_span = span;
+    old_bw_low = bw_low;
+    old_bw_high = bw_high;
+    old_pitch = pitch;
+    old_freq = freq;
+    strcpy(old_mode, mode_f->value);
+    #endif
 
     int display_ofs = (bw_low + bw_high) / 2;
     int fc_bin = (int) (display_ofs * BIN_PER_HZ);
@@ -235,7 +258,7 @@ static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
 		}
 		if (filter_width + filter_start > f_spectrum->x + f_spectrum->width)
 			filter_width = f_spectrum->x + f_spectrum->width - filter_start;
-		pitch = f_spectrum->x + (f_spectrum->width/2) - ((f_spectrum->width * pitch)/(span * 1000)) + filter_ofs;
+		pitch_col = f_spectrum->x + (f_spectrum->width/2) - ((f_spectrum->width * pitch)/(span * 1000)) + filter_ofs;
 	} else {
         // USB modes
         fc_bin = -fc_bin;
@@ -247,10 +270,10 @@ static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
 		filter_width = (f_spectrum->width * (bw_high-bw_low))/(span * 1000); 
 		if (filter_width + filter_start > f_spectrum->x + f_spectrum->width)
 			filter_width = f_spectrum->x + f_spectrum->width - filter_start;
-		pitch = f_spectrum->x + (f_spectrum->width/2) + ((f_spectrum->width * pitch)/(span * 1000)) + filter_ofs;
+		pitch_col = f_spectrum->x + (f_spectrum->width/2) + ((f_spectrum->width * pitch)/(span * 1000)) + filter_ofs;
 	}
     if(!strcmp(mode_f->value, "USB") || !strcmp(mode_f->value, "LSB") || !strcmp(mode_f->value, "FT8")){ // for LSB, USB and FT8 draw pitch line at center (carrier freq)
-        pitch = f_spectrum->x + (f_spectrum->width/2) + filter_ofs;
+        pitch_col = f_spectrum->x + (f_spectrum->width/2) + filter_ofs;
     }
 
 
@@ -268,7 +291,7 @@ static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
 		draw_text(gfx, f_spectrum->x + i - off, f_spectrum->y + grid_height, freq_text, FONT_SMALL);
 		f_start += freq_div;
 	}
-
+    // cairo_stroke(gfx);
 	// we only plot the second half of the bins (on the lower sideband)
 
 	int n_bins = (int)((1.0 * spectrum_span) * BIN_PER_HZ);
@@ -288,8 +311,8 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 		return;
 	}
 
-    // if (!grid_height)
-        draw_spectrum_init(f_spectrum, gfx);
+    // should only need to be called when mode, span, filter_low, filter_high or pitch changes
+    draw_spectrum_init(f_spectrum, gfx);
 
 	// clear the spectrum	
 	// fill_rect(gfx, f_spectrum->x, f_spectrum->y, f_spectrum->width, f_spectrum->height, SPECTRUM_BACKGROUND);
@@ -333,8 +356,8 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
  
     // draw carrier (USB, LSB, FT8) or rx pitch
     cairo_set_source_rgb(gfx, palette[SPECTRUM_PITCH][0],palette[SPECTRUM_PITCH][1], palette[SPECTRUM_PITCH][2]);
-    cairo_move_to(gfx, pitch, f_spectrum->y);
-    cairo_line_to(gfx, pitch, f_spectrum->y + grid_height); 
+    cairo_move_to(gfx, pitch_col, f_spectrum->y);
+    cairo_line_to(gfx, pitch_col, f_spectrum->y + grid_height); 
     cairo_stroke(gfx);
 
 	// draw the needle
