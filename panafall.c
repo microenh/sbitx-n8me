@@ -192,24 +192,21 @@ static void draw_spectrum_grid(struct field *f_spectrum, cairo_t *gfx){
 
 static const double BIN_PER_HZ = 1.0 / 46.875; // reciprocal of Hz/Bin
 
-static int grid_height = 0, starting_bin, ending_bin, pitch_col, filter_start, filter_width;
+static int grid_height = 0, starting_bin, ending_bin, pitch_col, filter_start, filter_width, f_start, freq_div;
 static float x_step;
 
 // void init_spectrum(void) {
 //     grid_height = 0;
 // }
 
-#if 0
 static int old_span = -1, old_bw_low, old_bw_high, old_pitch;
 static long old_freq;
 static char old_mode[10];
-#endif
 
 static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
-	int y, sub_division, i, bw_high, bw_low, pitch;
+	int y, sub_division, bw_high, bw_low, pitch;
 	float span;
-	long freq, freq_div;
-	char freq_text[20];
+	int freq;
 
 	pitch = atoi(get_field(RX_PITCH)->value);
 	struct field *mode_f = get_field(R1_MODE);
@@ -219,7 +216,7 @@ static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
 	bw_high = atoi(get_field(R1_HIGH)->value);
 	bw_low = atoi(get_field(R1_LOW)->value);
 
-    #if 0
+
     if ((old_span == span)
         && (old_bw_low == bw_low)
         && (old_bw_high == bw_high)
@@ -234,7 +231,6 @@ static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
     old_pitch = pitch;
     old_freq = freq;
     strcpy(old_mode, mode_f->value);
-    #endif
 
     int display_ofs = (bw_low + bw_high) / 2;
     int fc_bin = (int) (display_ofs * BIN_PER_HZ);
@@ -278,20 +274,8 @@ static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
 
 
 	// draw the frequency readout at the bottom
-	cairo_set_source_rgb(gfx, palette[COLOR_TEXT_MUTED][0], palette[COLOR_TEXT_MUTED][1], palette[COLOR_TEXT_MUTED][2]);
-	long f_start = freq - (4 * freq_div) - display_ofs; 
-	for (i = f_spectrum->width/10; i < f_spectrum->width; i += f_spectrum->width/10){
-		if (span >= 10){
-			sprintf(freq_text, "%ld", f_start/1000);
-		} else {
-			float f_start_temp = (((float)f_start/1000000.0) - ((int)(f_start/1000000))) *1000;
-			sprintf(freq_text, "%5.1f", f_start_temp);
-		}
-		int off = measure_text(gfx, freq_text, FONT_SMALL) / 2;
-		draw_text(gfx, f_spectrum->x + i - off, f_spectrum->y + grid_height, freq_text, FONT_SMALL);
-		f_start += freq_div;
-	}
-    // cairo_stroke(gfx);
+	f_start = freq - (4 * freq_div) - display_ofs; 
+
 	// we only plot the second half of the bins (on the lower sideband)
 
 	int n_bins = (int)((1.0 * spectrum_span) * BIN_PER_HZ);
@@ -315,8 +299,20 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
     draw_spectrum_init(f_spectrum, gfx);
 
 	// clear the spectrum	
-	// fill_rect(gfx, f_spectrum->x, f_spectrum->y, f_spectrum->width, f_spectrum->height, SPECTRUM_BACKGROUND);
-	fill_rect(gfx, f_spectrum->x, f_spectrum->y, f_spectrum->width, grid_height, SPECTRUM_BACKGROUND);
+	fill_rect(gfx, f_spectrum->x, f_spectrum->y, f_spectrum->width, f_spectrum->height, SPECTRUM_BACKGROUND);
+	// fill_rect(gfx, f_spectrum->x, f_spectrum->y, f_spectrum->width, grid_height, SPECTRUM_BACKGROUND);
+
+	// draw the frequency readout at the bottom
+    int inc = f_spectrum->width / 5;
+    int tgt = f_spectrum->x + f_spectrum->width;
+    char freq_text[20];
+	cairo_set_source_rgb(gfx, palette[COLOR_TEXT_MUTED][0], palette[COLOR_TEXT_MUTED][1], palette[COLOR_TEXT_MUTED][2]);
+	for (int i = f_spectrum->width/10 + f_spectrum->x, f_work = f_start; i < tgt; i += inc, f_work += 2 * freq_div) {
+        freq_with_separators(freq_text, f_work);
+		int off = measure_text(gfx, freq_text, FONT_SMALL) / 2;
+		draw_text(gfx, i - off, f_spectrum->y + grid_height, freq_text, FONT_SMALL);
+	}
+
 
     // background for the selected bandwidth
 	fill_rect(gfx, filter_start, f_spectrum->y, filter_width, grid_height, SPECTRUM_BANDWIDTH);  

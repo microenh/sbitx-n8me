@@ -7,16 +7,6 @@
 #include "drawing.h"
 #include "sdr.h"
 
-static void freq_with_separators(char *return_string, char *freq_str){
-	int freq = atoi(freq_str);
-	int f_mhz = freq / 1000000;
-	int f_khz = (freq % 1000000) / 1000;
-	int f_hz = (freq % 1000) / 10;
-
-	sprintf(return_string,"%d.%03d.%02d",f_mhz, f_khz, f_hz);
-}
-
-
 void draw_dial(struct field *f, cairo_t *gfx){
     const int LABEL_FONT = FONT_SMALL;
     const int TOP_FONT = FONT_LARGE_VALUE;
@@ -134,10 +124,10 @@ void draw_dial(struct field *f, cairo_t *gfx){
     draw_text(gfx, label_x, label_y, f->label, LABEL_FONT);
 
     draw_text(gfx, top_x, top_y, top_label, TOP_FONT);
-    freq_with_separators(freq_str, top_text);
+    freq_with_separators(freq_str, atoi(top_text));
     draw_text(gfx, f->x + f->width - X_INSET - measure_text(gfx, freq_str, TOP_FONT), top_y, freq_str, TOP_FONT);
 
     draw_text(gfx, bottom_x, bottom_y, bottom_label, BOTTOM_FONT);
-    freq_with_separators(freq_str, bottom_text);
+    freq_with_separators(freq_str, atoi(bottom_text));
     draw_text(gfx, f->x + f->width - X_INSET - measure_text(gfx, freq_str, BOTTOM_FONT), bottom_y, freq_str, BOTTOM_FONT);
 }

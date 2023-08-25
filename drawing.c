@@ -69,4 +69,11 @@ void rect(cairo_t *gfx, int x, int y, int w, int h, int color, int thickness){
 	cairo_stroke(gfx);
 }
 
+void freq_with_separators(char *return_string, int freq){
+	int f_mhz = freq / 1000000;
+	int f_khz = (freq % 1000000) / 1000;
+	int f_hz = (freq % 1000) / 10;
+
+	sprintf(return_string,"%d.%03d.%02d",f_mhz, f_khz, f_hz);
+}
 
