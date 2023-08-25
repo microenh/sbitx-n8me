@@ -199,14 +199,13 @@ static float x_step;
 //     grid_height = 0;
 // }
 
-static int old_span = -1, old_bw_low, old_bw_high, old_pitch;
-static long old_freq;
+static int old_bw_low, old_bw_high, old_pitch, old_freq;
 static char old_mode[10];
+static float old_span;
 
 static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
-	int y, sub_division, bw_high, bw_low, pitch;
+	int y, sub_division, bw_high, bw_low, pitch, freq;
 	float span;
-	int freq;
 
 	pitch = atoi(get_field(RX_PITCH)->value);
 	struct field *mode_f = get_field(R1_MODE);
@@ -232,15 +231,27 @@ static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
     old_freq = freq;
     strcpy(old_mode, mode_f->value);
 
-    int display_ofs = (bw_low + bw_high) / 2;
+	// the step is in khz, we multiply by 1000 and div 10(divisions) = 100 
+	freq_div = span * 100;  
+
+    // int display_ofs = (bw_low + bw_high) / 2;
+    int display_ofs = 0;
+    if (span < 10.0) {
+        display_ofs = span * 400;
+    }
+    if (span <= 20.0) {
+        int tun_ofs = freq % (2 * freq_div);
+        if (tun_ofs < freq_div)
+            display_ofs -= tun_ofs;
+        else
+            display_ofs += (2 * freq_div - tun_ofs);
+    }
     int fc_bin = (int) (display_ofs * BIN_PER_HZ);
     int filter_ofs = (f_spectrum-> width * display_ofs)/(span * 1000);
 
 	grid_height = f_spectrum->height - ((font_table[FONT_SMALL].height * 4) / 3);
 	sub_division = f_spectrum->width / 10;
 
-	// the step is in khz, we multiply by 1000 and div 10(divisions) = 100 
-	freq_div = span * 100;  
 
 	// calculate the position of bandwidth strip
 	if(!strcmp(mode_f->value, "CWR") || !strcmp(mode_f->value, "LSB")){
