@@ -222,7 +222,7 @@ static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
         && (old_bw_high == bw_high)
         && (old_pitch == pitch)
         && (old_freq == freq)
-        && !strcmp(old_mode, mode_f->value)) 
+        && !strcmp(old_mode, mode_f->value) && 0) 
         return;
 
     old_span = span;
