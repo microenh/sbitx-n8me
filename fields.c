@@ -23,7 +23,7 @@ static const char KEYER_SEL[] = "KEYBOARD/IAMBIC/IAMBICB/STRAIGHT";
 
 // the cmd fields that have '#' are not to be sent to the sdr
 struct field main_controls[] = {
-	{R1_FREQ, do_tuning, 600, 0, 150, 49, "FREQ", 5, "14000000", FIELD_NUMBER, FONT_SMALL, NULL, 500000, 30000000, 100},
+	{R1_FREQ, do_tuning, 600, 0, 150, 50, "FREQUENCY", 5, "14000000", FIELD_NUMBER, FONT_SMALL, NULL, 500000, 30000000, 100},
 
 	// Main RX
 	{R1_VOLUME, NULL, 750, 330, 50, 50, "AUDIO", 40, "60", FIELD_NUMBER, FONT_FIELD_VALUE, NULL, 0, 100, 1},

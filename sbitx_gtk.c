@@ -142,9 +142,9 @@ static void set_ui(int id);
 static void set_bandwidth(int hz);
 
 /* 	the field in focus will be exited when you hit an escape
-		the field in focus will be changeable until it loses focus
-		hover will always be on the field in focus.
-		if the focus is -1,then hover works
+    the field in focus will be changeable until it loses focus
+    hover will always be on the field in focus.
+    if the focus is -1,then hover works
 */
 
 /*
@@ -432,13 +432,13 @@ static void draw_field(GtkWidget *widget, cairo_t *gfx, struct field *f){
 		}
 	}
 
-	fill_rect(gfx, f->x, f->y, f->width,f->height, COLOR_BACKGROUND);
+	fill_rect(gfx, f->x, f->y, f->width, f->height, COLOR_BACKGROUND);
 	if (f_focus == f)
-		rect(gfx, f->x, f->y, f->width-1,f->height, COLOR_SELECTED_BOX, 2);
+		rect(gfx, f->x+1, f->y+1, f->width-2, f->height-2, COLOR_SELECTED_BOX, 2);
 	else if (f_hover == f)
-		rect(gfx, f->x, f->y, f->width,f->height, COLOR_SELECTED_BOX, 1);
+		rect(gfx, f->x+1, f->y+1, f->width-2, f->height-2, COLOR_SELECTED_BOX, 1);
 	else if (f->value_type != FIELD_STATIC)
-		rect(gfx, f->x, f->y, f->width,f->height, COLOR_CONTROL_BOX, 1);
+		rect(gfx, f->x, f->y, f->width, f->height, COLOR_CONTROL_BOX, 1);
 
 	int width, offset_x, text_length, line_start, y, label_height, 
 		value_height, value_font;	
@@ -2276,9 +2276,8 @@ static gboolean ui_tick(gpointer gook){
 
  
 	f = get_field(R1_MODE);
-	//straight key in CW
-	if (f && (!strcmp(f->value, "2TONE") || !strcmp(f->value, "LSB") || 
-	!strcmp(f->value, "USB"))){
+	// straight key in CW
+	if (f && (!strcmp(f->value, "2TONE") || !strcmp(f->value, "LSB") || !strcmp(f->value, "USB"))){
 		if (digitalRead(PTT) == LOW && in_tx == 0)
 			tx_on(TX_PTT);
 		else if (digitalRead(PTT) == HIGH && in_tx  == TX_PTT)
@@ -2543,16 +2542,6 @@ void do_cmd(const char *cmd){
 		tuning_step = 10;
 
 	// spectrum bandwidth
-    #if 0
-	else if (!strcmp(request, "#span=2.5K"))
-		spectrum_span = 2500;
-	else if (!strcmp(request, "#span=6K"))
-		spectrum_span = 6000;
-	else if (!strcmp(request, "#span=10K"))
-		spectrum_span = 10000;
-	else if (!strcmp(request, "#span=25K"))
-		spectrum_span = 25000;
-    #endif
     if (haveEqual && !strcmp(left, "#span")) {
         right[strlen(right) - 1] = '\0';
         spectrum_span = (int) (atof(right) * 1000);
