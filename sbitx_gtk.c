@@ -2458,7 +2458,7 @@ static void change_band(char *request){
 
 
 static void meter_calibrate(){
-	//we change to 40 meters, cw
+	// we change to 40 meters, cw
 	printf("starting meter calibration\n"
 	"1. Attach a power meter and a dummy load to the antenna\n"
 	"2. Adjust the drive until you see 40 watts on the power meter\n"

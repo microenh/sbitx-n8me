@@ -159,6 +159,8 @@ void draw_waterfall(struct field *f, cairo_t *gfx){
 	cairo_fill(gfx);
 }
 
+static int grid_ofs = 0;
+
 static void draw_spectrum_grid(struct field *f_spectrum, cairo_t *gfx){
 	int sub_division, grid_height;
 	struct field *f = f_spectrum;
@@ -183,16 +185,18 @@ static void draw_spectrum_grid(struct field *f_spectrum, cairo_t *gfx){
 	}
 
 	// draw the vertical grid
-	for (i = 0; i <= f->width; i += f->width/10){
-		cairo_move_to(gfx, f->x + i, f->y);
-		cairo_line_to(gfx, f->x + i, f->y + grid_height); 
+	for (i = grid_ofs; i <= f->width; i += f->width/10){
+        if (i >= 0) {
+		    cairo_move_to(gfx, f->x + i, f->y);
+		    cairo_line_to(gfx, f->x + i, f->y + grid_height); 
+        }
 	}
 	cairo_stroke(gfx);
 }
 
 static const double BIN_PER_HZ = 1.0 / 46.875; // reciprocal of Hz/Bin
 
-static int grid_height = 0, starting_bin, ending_bin, pitch_col, filter_start, filter_width, f_start, freq_div;
+static int grid_height = 0, starting_bin, ending_bin, pitch_col, filter_start, filter_width, f_start, freq_div, freq_ofs;
 static float x_step;
 
 // void init_spectrum(void) {
@@ -234,58 +238,57 @@ static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
 	// the step is in khz, we multiply by 1000 and div 10(divisions) = 100 
 	freq_div = span * 100;  
 
-    // int display_ofs = (bw_low + bw_high) / 2;
     int display_ofs = 0;
     if (span < 10.0) {
         display_ofs = span * 400;
     }
-    if (span <= 20.0) {
-        int tun_ofs = freq % (2 * freq_div);
-        if (tun_ofs < freq_div)
-            display_ofs -= tun_ofs;
-        else
-            display_ofs += (2 * freq_div - tun_ofs);
-    }
+
     int fc_bin = (int) (display_ofs * BIN_PER_HZ);
-    int filter_ofs = (f_spectrum-> width * display_ofs)/(span * 1000);
+    float pixels_per_hz = f_spectrum->width / (span * 1000);
+    int filter_ofs = display_ofs * pixels_per_hz;
 
 	grid_height = f_spectrum->height - ((font_table[FONT_SMALL].height * 4) / 3);
 	sub_division = f_spectrum->width / 10;
 
+    if (span <= 20) {
+        grid_ofs = -(freq % freq_div) * pixels_per_hz;
+        freq_ofs = -(freq % (2 * freq_div)) * pixels_per_hz;
+        f_start = freq - (freq % (2 * freq_div));
+    } else {
+        grid_ofs = freq_ofs = 0;
+        f_start = freq - (4 * freq_div) - display_ofs; 
+    }
 
 	// calculate the position of bandwidth strip
 	if(!strcmp(mode_f->value, "CWR") || !strcmp(mode_f->value, "LSB")){
         // LSB modes
-	 	filter_start = f_spectrum->x + (f_spectrum->width/2) - ((f_spectrum->width * bw_high)/(span * 1000)) + filter_ofs; 
+	 	filter_start = f_spectrum->x + (f_spectrum->width/2) - (bw_high * pixels_per_hz) + filter_ofs; 
 		if (filter_start < f_spectrum->x){
-	 	    filter_width = ((f_spectrum->width * (bw_high - bw_low))/(span * 1000)) - (f_spectrum->x - filter_start); 
+	 	    filter_width = (bw_high - bw_low) * pixels_per_hz - (f_spectrum->x - filter_start); 
 			filter_start = f_spectrum->x;
 		} else {
-			filter_width = (f_spectrum->width * (bw_high - bw_low))/(span * 1000); 
+			filter_width = (bw_high - bw_low) * pixels_per_hz; 
 		}
 		if (filter_width + filter_start > f_spectrum->x + f_spectrum->width)
 			filter_width = f_spectrum->x + f_spectrum->width - filter_start;
-		pitch_col = f_spectrum->x + (f_spectrum->width/2) - ((f_spectrum->width * pitch)/(span * 1000)) + filter_ofs;
+		pitch_col = f_spectrum->x + (f_spectrum->width/2) - (pitch * pixels_per_hz) + filter_ofs;
 	} else {
         // USB modes
         fc_bin = -fc_bin;
         filter_ofs = -filter_ofs;
         display_ofs = -display_ofs;
-		filter_start = f_spectrum->x + (f_spectrum->width/2) + ((f_spectrum->width * bw_low)/(span * 1000)) + filter_ofs; 
+		filter_start = f_spectrum->x + (f_spectrum->width/2) + (bw_low * pixels_per_hz) + filter_ofs; 
 		if (filter_start < f_spectrum->x)
 			filter_start = f_spectrum->x;
-		filter_width = (f_spectrum->width * (bw_high-bw_low))/(span * 1000); 
+		filter_width = (bw_high - bw_low) * pixels_per_hz; 
 		if (filter_width + filter_start > f_spectrum->x + f_spectrum->width)
 			filter_width = f_spectrum->x + f_spectrum->width - filter_start;
-		pitch_col = f_spectrum->x + (f_spectrum->width/2) + ((f_spectrum->width * pitch)/(span * 1000)) + filter_ofs;
+		pitch_col = f_spectrum->x + (f_spectrum->width/2) + pitch * pixels_per_hz + filter_ofs;
 	}
     if(!strcmp(mode_f->value, "USB") || !strcmp(mode_f->value, "LSB") || !strcmp(mode_f->value, "FT8")){ // for LSB, USB and FT8 draw pitch line at center (carrier freq)
         pitch_col = f_spectrum->x + (f_spectrum->width/2) + filter_ofs;
     }
 
-
-	// draw the frequency readout at the bottom
-	f_start = freq - (4 * freq_div) - display_ofs; 
 
 	// we only plot the second half of the bins (on the lower sideband)
 
@@ -313,15 +316,17 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 	fill_rect(gfx, f_spectrum->x, f_spectrum->y, f_spectrum->width, f_spectrum->height, SPECTRUM_BACKGROUND);
 	// fill_rect(gfx, f_spectrum->x, f_spectrum->y, f_spectrum->width, grid_height, SPECTRUM_BACKGROUND);
 
+
 	// draw the frequency readout at the bottom
     int inc = f_spectrum->width / 5;
     int tgt = f_spectrum->x + f_spectrum->width;
     char freq_text[20];
 	cairo_set_source_rgb(gfx, palette[COLOR_TEXT_MUTED][0], palette[COLOR_TEXT_MUTED][1], palette[COLOR_TEXT_MUTED][2]);
-	for (int i = f_spectrum->width/10 + f_spectrum->x, f_work = f_start; i < tgt; i += inc, f_work += 2 * freq_div) {
+	for (int i = f_spectrum->width/10 + freq_ofs + f_spectrum->x, f_work = f_start; i < tgt; i += inc, f_work += 2 * freq_div) {
         freq_with_separators(freq_text, f_work);
-		int off = measure_text(gfx, freq_text, FONT_SMALL) / 2;
-		draw_text(gfx, i - off, f_spectrum->y + grid_height, freq_text, FONT_SMALL);
+        int off = measure_text(gfx, freq_text, FONT_SMALL) / 2;
+        if (i >= off)
+            draw_text(gfx, i - off, f_spectrum->y + grid_height, freq_text, FONT_SMALL);
 	}
 
 
