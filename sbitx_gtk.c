@@ -476,6 +476,7 @@ static void draw_field(GtkWidget *widget, cairo_t *gfx, struct field *f){
 		case FIELD_NUMBER:
 		case FIELD_TOGGLE:
 		case FIELD_BUTTON:
+        #if 0
 			label_height = font_table[FONT_FIELD_LABEL].height;
 			width = measure_text(gfx, f->label, FONT_FIELD_LABEL);
 			offset_x = f->x + f->width/2 - width/2;
@@ -494,6 +495,27 @@ static void draw_field(GtkWidget *widget, cairo_t *gfx, struct field *f){
 				draw_text(gfx, offset_x, label_y, f->label, FONT_FIELD_LABEL);
 				width = measure_text(gfx, f->value, value_font);
 				label_y += font_table[FONT_FIELD_LABEL].height;
+				draw_text(gfx, f->x + f->width/2 - width/2, label_y, f->value, value_font);
+			}
+        #endif
+			label_height = measure_text_y(gfx, f->font_index); // font_table[f->font_index].height;
+			width = measure_text(gfx, f->label, f->font_index);
+			offset_x = f->x + f->width/2 - width/2;
+			// is it a two line display or a single line?
+			if (f->value_type == FIELD_BUTTON && !f->value[0]){
+				label_y = f->y + (f->height - label_height)/2;
+				draw_text(gfx, offset_x,label_y, f->label, f->font_index);
+			} 
+			else {
+				if(width >= f->width+2)
+					value_font = FONT_SMALL_FIELD_VALUE;
+				else
+					value_font = f->font_index;
+				value_height = measure_text_y(gfx, f->font_index); // font_table[value_font].height;
+				label_y = f->y + ((f->height  - label_height  - value_height)/2);
+				draw_text(gfx, offset_x, label_y, f->label, f->font_index);
+				width = measure_text(gfx, f->value, value_font);
+				label_y += font_table[f->font_index].height;
 				draw_text(gfx, f->x + f->width/2 - width/2, label_y, f->value, value_font);
 			}
       break;
