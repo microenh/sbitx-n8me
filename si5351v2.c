@@ -60,7 +60,7 @@ void i2cSendRegister(uint8_t reg, uint8_t* data, uint8_t n){
 void i2cSendRegister(uint8_t reg, uint8_t val){ 
   while (i2cbb_write_byte_data(SI5351_ADDR, reg, val) < 0)
   {
-    printf("Repeating I2C #%d\n",i2c_error_count++);  // reports number of I2C repeats caused by errors
+    printf("Repeating I2C #%d\n", ++i2c_error_count);  // reports number of I2C repeats caused by errors
     delay(1);
   }
 }

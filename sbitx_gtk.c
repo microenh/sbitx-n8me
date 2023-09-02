@@ -72,6 +72,8 @@ static int mouse_down = 0;
 static int last_mouse_x = -1;
 static int last_mouse_y = -1;
 
+static char *argv_0;
+
 //encoder state
 struct encoder {
 	int pin_a, pin_b;
@@ -1995,11 +1997,37 @@ static void query_swr(){
 	set_field(_VSWR, buff);
 }
 
+
+static void init_gpio_pins(void) {
+    #if 0
+    char directory[PATH_MAX];
+    realpath(argv_0, directory);
+    strcpy(directory, dirname(directory));
+    strcat(directory, "/../setGPIO.py");
+    system(directory);
+    #else
+    const int8_t PINS_IN[] = {7, 0, 2, 3, 12, 13, 14, 21, -1};
+    const int8_t PINS_OUT[] = {4, 5, 6, 10, 11, 27, -1};
+
+    int8_t *i = (int8_t *) PINS_IN;
+    while (*i >= 0) {
+        pinMode(*i, INPUT);
+        pullUpDnControl(*i, PUD_UP);
+        i++;
+    }
+
+    i = (uint8_t *) PINS_OUT;
+    while (*i >= 0) {
+        pinMode(*i, OUTPUT);
+        digitalWrite(*i, LOW);
+        i++;
+    }
+    #endif
+}
+
 static void hw_init(){
 	wiringPiSetup();
-	#ifndef N8ME
 	init_gpio_pins();
-	#endif
 
 	enc_init(&enc_a, ENC_FAST, ENC1_B, ENC1_A);
 	enc_init(&enc_b, ENC_FAST, ENC2_A, ENC2_B);
@@ -2929,12 +2957,10 @@ static void ensure_single_instance(){
 int main( int argc, char* argv[] ) {
     char directory[PATH_MAX];
 
+    argv_0 = argv[0];
+
 	puts(VER_STR);
 
-    realpath(argv[0], directory);
-    strcpy(directory, dirname(directory));
-    strcat(directory, "/../setGPIO.py");
-    system(directory);
 
 	active_layout = main_controls;
 
