@@ -2006,6 +2006,7 @@ static void init_gpio_pins(void) {
     strcat(directory, "/../setGPIO.py");
     system(directory);
     #else
+    // this requires wiringpi 2.61 (unoffical mods)
     const int8_t PINS_IN[] = {7, 0, 2, 3, 12, 13, 14, 21, -1};
     const int8_t PINS_OUT[] = {4, 5, 6, 10, 11, 27, -1};
 
