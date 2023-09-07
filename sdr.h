@@ -91,7 +91,8 @@ for the transmission. The data required is the same!
 #include <complex.h>
 
 extern float fft_bins[];
-extern int spectrum_plot[];
+// extern int spectrum_plot[];
+extern fftw_complex *fft_spectrum;
 extern struct filter *ssb;
 
 // vfo definitions

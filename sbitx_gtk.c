@@ -269,7 +269,7 @@ int	data_delay = 700;
 
 #define MAX_RIT 25000
 
-extern int spectrum_plot[];
+// extern int spectrum_plot[];
 extern int fwdpower, vswr;
 
 

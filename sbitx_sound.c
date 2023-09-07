@@ -125,7 +125,7 @@ void sound_mixer(char *card_name, char *element, int make_on)
     snd_mixer_close(handle);
 }
 
-// const int rate = SAMPLE_RATE; /* Sample rate */
+// const int rate = 96000; /* Sample rate */
 static snd_pcm_uframes_t buff_size = 8192; /* Periodsize (bytes) */
 static int n_periods_per_buffer = 2;       /* Number of periods */
 //static int n_periods_per_buffer = 1024;       /* Number of periods */

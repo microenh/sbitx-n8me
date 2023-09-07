@@ -1,4 +1,6 @@
+#include <complex.h>
 #include <gtk/gtk.h>
+#include <math.h>
 
 #include "command_str.h"
 #include "drawing.h"
@@ -351,7 +353,8 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 		// the center fft bin is at zero, from MAX_BINS/2 onwards,
 		// the bins are at lowest frequency (-ve frequency)
 		// y axis is the power in db of each bin, scaled to 80 db
-		y = ((spectrum_plot[i] + waterfall_offset) * f_spectrum->height) / 80; 
+		// y = ((spectrum_plot[i] + waterfall_offset) * f_spectrum->height) / 80; 
+		y = (((10 * log10f(cnrmf(fft_spectrum[i]))) + waterfall_offset) * f_spectrum->height) / 80; 
 		// limit y inside the spectrum display box
 		if (y <  0)
 			y = 0;
@@ -396,6 +399,7 @@ static int waterfall_fn(struct field *f, cairo_t *gfx, int event, int a, int b){
 }
 #endif
 
+#if 0
 void web_get_spectrum(char *buff){
 
 	int n_bins = (int)((1.0 * spectrum_span) / 46.875);
@@ -432,3 +436,4 @@ void web_get_spectrum(char *buff){
 	buff[j++] = 0;
 	return;
 }
+#endif

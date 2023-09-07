@@ -1,9 +1,9 @@
 void setup(void);
 void loop(void);
-extern int spectrum_plot[];
+// extern int spectrum_plot[];
 void remote_execute(char *command);
 int remote_update_field(int i, char *text);
-void web_get_spectrum(char *buff);
+//void web_get_spectrum(char *buff);
 int web_get_console(char *buff, int max);
 int remote_audio_output(int16_t *samples);
 void abort_tx(void);

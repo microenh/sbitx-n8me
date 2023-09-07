@@ -48,7 +48,7 @@ FILE *pf_debug = NULL;
 int sbitx_version = SBITX_V2;
 int fwdpower, vswr;
 float fft_bins[MAX_BINS]; // spectrum amplitudes  
-int spectrum_plot[MAX_BINS];
+// int spectrum_plot[MAX_BINS];
 fftw_complex *fft_spectrum;
 fftw_plan plan_spectrum;
 float spectrum_window[MAX_BINS];
@@ -203,6 +203,7 @@ void spectrum_reset(){
 		fft_bins[i] = 0;
 }
 
+#if 0
 void spectrum_update(){
 	// we are only using the lower half of the bins, so this copies twice as many bins, 
 	// it can be optimized. leaving it here just in case someone wants to try I Q channels 
@@ -224,6 +225,7 @@ void spectrum_update(){
         #endif
 	}
 }
+#endif
 
 int remote_audio_output(int16_t *samples){
 	int length = q_length(&qremote);
@@ -607,7 +609,7 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	my_fftw_execute(plan_spectrum);
 
 	// the spectrum display is updated
-	spectrum_update();
+	// spectrum_update();
 
 
 	// ... back to the actual processing, after spectrum update  
