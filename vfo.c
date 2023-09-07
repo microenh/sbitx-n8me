@@ -10,9 +10,14 @@
 
 #include "sdr.h"
 
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
+
+
 //we define one more than needed to cover the boundary of quadrature
 static int	phase_table[MAX_PHASE_COUNT];
-int sampling_freq = 96000; 
+// int sampling_freq = rate; 
 
 void vfo_init_phase_table(){
 	for (int i = 0; i < MAX_PHASE_COUNT; i++){
@@ -22,7 +27,7 @@ void vfo_init_phase_table(){
 }
 
 void vfo_start(struct vfo *v, int frequency_hz, int start_phase){
-	v->phase_increment = (frequency_hz * 65536) / sampling_freq;
+	v->phase_increment = (frequency_hz * 65536) / rate;
 	v->phase = start_phase;
 	v->freq_hz = frequency_hz;
 }

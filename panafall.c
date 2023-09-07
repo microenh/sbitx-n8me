@@ -194,7 +194,6 @@ static void draw_spectrum_grid(struct field *f_spectrum, cairo_t *gfx){
 	cairo_stroke(gfx);
 }
 
-static const double BIN_PER_HZ = 1.0 / 46.875; // reciprocal of Hz/Bin
 
 static int grid_height = 0, starting_bin, ending_bin, pitch_col, filter_start, filter_width, f_start, freq_div, freq_ofs;
 static float x_step;
@@ -210,6 +209,8 @@ static float old_span;
 static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
 	int y, sub_division, bw_high, bw_low, pitch, freq;
 	float span;
+    static const double BIN_PER_HZ = (double) MAX_BINS / rate; // 1.0 / 46.875; // reciprocal of Hz/Bin
+
 
 	pitch = atoi(get_field(RX_PITCH)->value);
 	struct field *mode_f = get_field(R1_MODE);

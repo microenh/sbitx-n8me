@@ -47,7 +47,7 @@ FILE *pf_debug = NULL;
 
 int sbitx_version = SBITX_V2;
 int fwdpower, vswr;
-float fft_bins[MAX_BINS]; // spectrum ampltiudes  
+float fft_bins[MAX_BINS]; // spectrum amplitudes  
 int spectrum_plot[MAX_BINS];
 fftw_complex *fft_spectrum;
 fftw_plan plan_spectrum;
@@ -68,7 +68,7 @@ static int rx_gain = 100;
 static int rx_vol = 100;
 static int tx_gain = 100;
 static int tx_compress = 0;
-static double spectrum_speed = 0.1;
+static double spectrum_speed = 1.0; // 0.1;
 // int in_tx = 0;
 static int rx_tx_ramp = 0;
 static int sidetone = 2000000000;
@@ -122,11 +122,7 @@ struct power_settings band_power[] ={
 
 struct Queue qremote;
 
-#ifdef N8ME
 void radio_tune_to(uint32_t f){
-#else
-void radio_tune_to(u_int32_t f){
-#endif
 	if (rx_list->mode == MODE_CW)
   		si5351bx_setfreq(2, f + bfo_freq - 24000 + TUNING_SHIFT - rx_pitch);
 	else if (rx_list->mode == MODE_CWR)
@@ -145,7 +141,7 @@ void fft_init(){
 
 	mem_needed = sizeof(fftw_complex) * MAX_BINS;
 
-	fft_m = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS/2);
+	fft_m = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS / 2);
 	fft_in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
 	fft_out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
 	fft_spectrum = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
@@ -153,7 +149,7 @@ void fft_init(){
 	memset(fft_spectrum, 0, sizeof(fftw_complex) * MAX_BINS);
 	memset(fft_in, 0, sizeof(fftw_complex) * MAX_BINS);
 	memset(fft_out, 0, sizeof(fftw_complex) * MAX_BINS);
-	memset(fft_m, 0, sizeof(fftw_complex) * MAX_BINS/2);
+	memset(fft_m, 0, sizeof(fftw_complex) * MAX_BINS / 2);
 
 	plan_fwd = fftw_plan_dft_1d(MAX_BINS, fft_in, fft_out, FFTW_FORWARD, FFTW_ESTIMATE);
 	plan_spectrum = fftw_plan_dft_1d(MAX_BINS, fft_in, fft_spectrum, FFTW_FORWARD, FFTW_ESTIMATE);
@@ -215,13 +211,17 @@ void spectrum_update(){
 
 	// this has been hand optimized to lower
 	// the inordinate cpu usage
-	for (int i = 1269; i < 1803; i++){
+	for (int i = 1269; i < 1803; i++){  // 11484.325 Hz .. 36525.625 Hz
 
-		fft_bins[i] = ((1.0 - spectrum_speed) * fft_bins[i]) + 
-			(spectrum_speed * cabs(fft_spectrum[i]));
+        #if 0
+		fft_bins[i] = ((1.0 - spectrum_speed) * fft_bins[i]) + (spectrum_speed * cabs(fft_spectrum[i]));
 
 		int y = power2dB(cnrmf(fft_bins[i])); 
 		spectrum_plot[i] = y;
+        #else
+        // spectrum_plot[i] = power2dB(cnrmf(((1.0 - spectrum_speed) * fft_bins[i]) + (spectrum_speed * cabs(fft_spectrum[i]))));
+        spectrum_plot[i] = 10 * log10f(cnrmf(fft_spectrum[i]));
+        #endif
 	}
 }
 
@@ -320,7 +320,7 @@ void wav_record(int32_t *samples, int count){
 	int16_t *w;
 	int32_t *s;
 	int i = 0, j = 0;
-	int decimation_factor = 96000 / 12000; 
+	int decimation_factor = rate / 12000; 
 
 	if (!pf_record)
 		return;
@@ -349,16 +349,16 @@ short is_ready = 0;
 
 void tx_init(int frequency, short mode, int bpf_low, int bpf_high){
 
-	// we assume that there are 96000 samples / sec, giving us a 48khz slice
+	// we assume that there are <rate> samples / sec, giving us a 48khz slice
 	// the tuning can go up and down only by 22 KHz from the center_freq
 
 	tx_filter = filter_new(1024, 1025);
-	filter_tune(tx_filter, (1.0 * bpf_low)/96000.0, (1.0 * bpf_high)/96000.0 , 5);
+	filter_tune(tx_filter, (1.0 * bpf_low) / rate, (1.0 * bpf_high) / rate , 5);
 }
 
 struct rx *add_tx(int frequency, short mode, int bpf_low, int bpf_high){
 
-	// we assume that there are 96000 samples / sec, giving us a 48khz slice
+	// we assume that there are <rate> samples / sec, giving us a 48khz slice
 	// the tuning can go up and down only by 22 KHz from the center_freq
 
 	struct rx *r = malloc(sizeof(struct rx));
@@ -376,7 +376,7 @@ struct rx *add_tx(int frequency, short mode, int bpf_low, int bpf_high){
 	r->mode = mode;
 	
 	r->filter = filter_new(1024, 1025);
-	filter_tune(r->filter, (1.0 * bpf_low)/96000.0, (1.0 * bpf_high)/96000.0 , 5);
+	filter_tune(r->filter, (1.0 * bpf_low) / rate, (1.0 * bpf_high)/ rate , 5);
 
 	if (abs(bpf_high - bpf_low) < 1000){
 		r->agc_speed = 10;
@@ -397,7 +397,7 @@ struct rx *add_tx(int frequency, short mode, int bpf_low, int bpf_high){
 
 struct rx *add_rx(int frequency, short mode, int bpf_low, int bpf_high){
 
-	// we assume that there are 96000 samples / sec, giving us a 48khz slice
+	// we assume that there are <rate> samples / sec, giving us a 48khz slice
 	// the tuning can go up and down only by 22 KHz from the center_freq
 
 	struct rx *r = malloc(sizeof(struct rx));
@@ -416,7 +416,7 @@ struct rx *add_rx(int frequency, short mode, int bpf_low, int bpf_high){
 	r->mode = mode;
 	
 	r->filter = filter_new(1024, 1025);
-	filter_tune(r->filter, (1.0 * bpf_low)/96000.0, (1.0 * bpf_high)/96000.0 , 5);
+	filter_tune(r->filter, (1.0 * bpf_low) / rate, (1.0 * bpf_high) / rate , 5);
 
 	if (abs(bpf_high - bpf_low) < 1000){
 		r->agc_speed = 300;
@@ -877,13 +877,13 @@ void sound_process(
 void set_rx_filter(){
 	if(rx_list->mode == MODE_LSB || rx_list->mode == MODE_CWR)
 		filter_tune(rx_list->filter, 
-			(1.0 * -rx_list->high_hz)/96000.0, 
-			(1.0 * -rx_list->low_hz)/96000.0 , 
+			(1.0 * -rx_list->high_hz) / rate, 
+			(1.0 * -rx_list->low_hz) / rate, 
 			5);
 	else
 		filter_tune(rx_list->filter, 
-			(1.0 * rx_list->low_hz)/96000.0, 
-			(1.0 * rx_list->high_hz)/96000.0 , 
+			(1.0 * rx_list->low_hz) / rate, 
+			(1.0 * rx_list->high_hz) / rate, 
 			5);
 }
 
@@ -1306,30 +1306,30 @@ void sdr_request(char *request, char *response){
 
 		if (rx_list->mode == MODE_LSB || rx_list->mode == MODE_CWR){
 			filter_tune(rx_list->filter, 
-				(1.0 * -3000)/96000.0, 
-				(1.0 * -300)/96000.0 , 
+				(1.0 * -3000) / rate, 
+				(1.0 * -300) / rate, 
 				5);
 			// puts("\n\n\ntx filter ");
 			filter_tune(tx_list->filter, 
-				(1.0 * -3000)/96000.0, 
-				(1.0 * -300)/96000.0 , 
+				(1.0 * -3000) / rate, 
+				(1.0 * -300) / rate, 
 				5);
 			filter_tune(tx_filter, 
-				(1.0 * -3000)/96000.0, 
-				(1.0 * -300)/96000.0 , 
+				(1.0 * -3000) / rate, 
+				(1.0 * -300) / rate, 
 				5);
 		} else { 
 			filter_tune(rx_list->filter, 
-				(1.0 * 300)/96000.0, 
-				(1.0 * 3000)/96000.0 , 
+				(1.0 * 300) / rate, 
+				(1.0 * 3000) / rate, 
 				5);
 			filter_tune(tx_list->filter, 
-				(1.0 * 300)/96000.0, 
-				(1.0 * 3000)/96000.0 , 
+				(1.0 * 300) / rate, 
+				(1.0 * 3000) / rate, 
 				5);
 			filter_tune(tx_filter, 
-				(1.0 * 300)/96000.0, 
-				(1.0 * 3000)/96000.0 , 
+				(1.0 * 300) / rate, 
+				(1.0 * 3000) / rate, 
 				5);
 		}
 		
@@ -1338,9 +1338,9 @@ void sdr_request(char *request, char *response){
 	} else if (!strcmp(cmd, "txmode")){
 		puts("\n\n\n\n###### tx filter #######");
 		if (!strcmp(value, "LSB") || !strcmp(value, "CWR"))
-			filter_tune(tx_filter, (1.0*-3000)/96000.0, (1.0 * -300)/96000.0, 5);
+			filter_tune(tx_filter, (1.0*-3000) / rate, (1.0 * -300) / rate, 5);
 		else
-			filter_tune(tx_filter, (1.0*300)/96000.0, (1.0*3000)/96000.0, 5);
+			filter_tune(tx_filter, (1.0*300) / rate, (1.0*3000) / rate, 5);
 	} else if(!strcmp(cmd, "record")){
 		if (!strcmp(value, "off")){
 			fclose(pf_record);
