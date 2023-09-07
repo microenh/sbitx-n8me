@@ -211,7 +211,7 @@ static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
 
 	pitch = atoi(get_field(RX_PITCH)->value);
 	struct field *mode_f = get_field(R1_MODE);
-	freq = atol(get_field(R1_FREQ)->value);
+	freq = atoi(get_field(R1_FREQ)->value);
 
 	span = atof(get_field(_SPAN)->value);
 	bw_high = atoi(get_field(R1_HIGH)->value);

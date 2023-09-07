@@ -629,6 +629,7 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 		r->fft_freq[i] = fft_out[b];
 	}
 
+    #if 0
 	// STEP 5:zero out the other sideband
 	if (r->mode == MODE_LSB || r->mode == MODE_CWR)
 		for (i = 0; i < MAX_BINS/2; i++){
@@ -640,6 +641,7 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 			__real__ r->fft_freq[i] = 0;
 			__imag__ r->fft_freq[i] = 0;	
 		}
+    #endif
 
 	// STEP 6: apply the filter to the signal,
 	// in frequency domain we just multiply the filter
