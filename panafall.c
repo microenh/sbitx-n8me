@@ -174,11 +174,6 @@ static void draw_spectrum_grid(struct field *f_spectrum, cairo_t *gfx){
 	cairo_set_source_rgb(gfx, palette[SPECTRUM_GRID][0], 
 		palette[SPECTRUM_GRID][1], palette[SPECTRUM_GRID][2]);
 
-
-	cairo_set_line_width(gfx, 1);
-	cairo_set_source_rgb(gfx, palette[SPECTRUM_GRID][0], 
-		palette[SPECTRUM_GRID][1], palette[SPECTRUM_GRID][2]);
-
 	// draw the horizontal grid
 	int i;
 	for (i =  0; i <= grid_height; i += grid_height/10){
