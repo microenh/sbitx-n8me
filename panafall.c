@@ -176,13 +176,13 @@ static void draw_spectrum_grid(struct field *f_spectrum, cairo_t *gfx){
 
 	// draw the horizontal grid
 	int i;
-	for (i =  0; i <= grid_height; i += grid_height/10){
+	for (i =  0; i <= grid_height; i += grid_height / 10){
 		cairo_move_to(gfx, f->x, f->y + i);
 		cairo_line_to(gfx, f->x + f->width, f->y + i); 
 	}
 
 	// draw the vertical grid
-	for (i = grid_ofs; i <= f->width; i += f->width/10){
+	for (i = grid_ofs; i <= f->width; i += f->width / 10){
         if (i >= 0) {
 		    cairo_move_to(gfx, f->x + i, f->y);
 		    cairo_line_to(gfx, f->x + i, f->y + grid_height); 

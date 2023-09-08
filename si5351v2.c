@@ -251,13 +251,13 @@ void si5351_set_calibration(int32_t cal){
 }
 
 void si5351bx_init(){ 
-  i2cbb_init(SDA, SCL);
-	delay(10);
-  si5351_reset();
-	delay(10);
-  si5351a_clkoff(SI_CLK0_CONTROL);
-  si5351a_clkoff(SI_CLK1_CONTROL);
-  si5351a_clkoff(SI_CLK2_CONTROL);
+    i2cbb_init(SDA, SCL);
+    delay(10);
+    si5351_reset();
+    delay(10);
+    si5351a_clkoff(SI_CLK0_CONTROL);
+    si5351a_clkoff(SI_CLK1_CONTROL);
+    si5351a_clkoff(SI_CLK2_CONTROL);
 }
 
 /*

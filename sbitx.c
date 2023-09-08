@@ -571,7 +571,7 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 
 	// STEP 1: first add the previous M samples to
 	for (i = 0; i < MAX_BINS/2; i++)
-		__real__ fft_in[i] = /* __real__ fft_in[i + MAX_BINS/2]; */ __real__ fft_m[i] * spectrum_window[i];
+		__real__ fft_in[i] = __real__ fft_m[i];
 
 	// STEP 2: then add the new set of samples
 	// m is the index into incoming samples, starting at zero
@@ -582,8 +582,8 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 		// i_sample = ((double) input_rx[m]) * 5e-09; // / 200000000.0;
 		// q_sample = 0;
 
-		double i_sample = __real__ fft_m[m] = ((double) input_rx[m]) * 5e-09;
-		__real__ fft_in[i] = i_sample * spectrum_window[i]; // / 200000000.0; // i_sample;
+		__real__ fft_in[i] = __real__ fft_m[m] = ((double) input_rx[m]) * 5e-09;
+		// __real__ fft_in[i] = i_sample; // * spectrum_window[i]; // / 200000000.0; // i_sample;
 		// __imag__ fft_in[i] = __imag__ fft_m[m] = 0.0; // q_sample;
 
 		// __real__ fft_in[i] = i_sample;
@@ -601,9 +601,9 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	// NOTE: the spectrum update has nothing to do with the actual
 	// signal processing. If you are not showing the spectrum or the
 	// waterfall, you can skip these steps
-	// for (i = 0; i < MAX_BINS; i++)
-	//    __real__ fft_in[i] *= spectrum_window[i];
-	// my_fftw_execute(plan_spectrum); // fft_in -> fft_spectrum, forward
+	for (i = 0; i < MAX_BINS; i++)
+	    __real__ fft_in[i] *= spectrum_window[i];
+	my_fftw_execute(plan_fwd); // fft_in -> fft_spectrum, forward
 
 	// the spectrum display is updated
 	// spectrum_update();
@@ -937,10 +937,10 @@ void setup_oscillators(){
 	delay(200);
 	si5351bx_setfreq(1, bfo_freq);
 
-	delay(200);
-	si5351bx_setfreq(1, bfo_freq);
+	// delay(200);
+	// si5351bx_setfreq(1, bfo_freq);
 
-	si5351_reset();
+	// si5351_reset();
 }
 
 
@@ -959,8 +959,10 @@ static int hw_settings_handler(void* user, const char* section,
 	if (!strcmp(name, "scale"))
 		band_power[hw_init_index++].scale = atof(value);
 
-	if (!strcmp(name, "bfo_freq"))
+	if (!strcmp(name, "bfo_freq")) {
 		bfo_freq = atoi(value);
+        //printf ("Setting BFO freq to %d\r\n", bfo_freq);
+    }
 }
 
 static void read_hw_ini(){
