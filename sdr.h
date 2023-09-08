@@ -92,7 +92,8 @@ for the transmission. The data required is the same!
 
 extern float fft_bins[];
 // extern int spectrum_plot[];
-extern fftw_complex *fft_spectrum;
+// extern fftw_complex *fft_spectrum;
+extern fftw_complex *fft_out;
 extern struct filter *ssb;
 
 // vfo definitions
@@ -112,7 +113,7 @@ int vfo_read(struct vfo *v);
 // the filter definitions
 struct filter {
 	complex float *fir_coeff;
-	complex float *overlap;
+	// complex float *overlap;
 	int N;
 	int L;
 	int M;

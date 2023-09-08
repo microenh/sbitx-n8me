@@ -49,8 +49,8 @@ int sbitx_version = SBITX_V2;
 int fwdpower, vswr;
 float fft_bins[MAX_BINS]; // spectrum amplitudes  
 // int spectrum_plot[MAX_BINS];
-fftw_complex *fft_spectrum;
-fftw_plan plan_spectrum;
+// fftw_complex *fft_spectrum;
+// fftw_plan plan_spectrum;
 float spectrum_window[MAX_BINS];
 void set_rx1(int frequency);
 void tr_switch(int tx_on);
@@ -144,15 +144,15 @@ void fft_init(){
 	fft_m = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS / 2);
 	fft_in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
 	fft_out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
-	fft_spectrum = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
+	// fft_spectrum = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
 
-	memset(fft_spectrum, 0, sizeof(fftw_complex) * MAX_BINS);
+	// memset(fft_spectrum, 0, sizeof(fftw_complex) * MAX_BINS);
 	memset(fft_in, 0, sizeof(fftw_complex) * MAX_BINS);
 	memset(fft_out, 0, sizeof(fftw_complex) * MAX_BINS);
 	memset(fft_m, 0, sizeof(fftw_complex) * MAX_BINS / 2);
 
 	plan_fwd = fftw_plan_dft_1d(MAX_BINS, fft_in, fft_out, FFTW_FORWARD, FFTW_ESTIMATE);
-	plan_spectrum = fftw_plan_dft_1d(MAX_BINS, fft_in, fft_spectrum, FFTW_FORWARD, FFTW_ESTIMATE);
+	// plan_spectrum = fftw_plan_dft_1d(MAX_BINS, fft_in, fft_spectrum, FFTW_FORWARD, FFTW_ESTIMATE);
 
 	// zero up the previous 'M' bins
 	for (int i= 0; i < MAX_BINS/2; i++){
@@ -168,7 +168,7 @@ void fft_reset_m_bins(){
 	memset(fft_in, 0, sizeof(fftw_complex) * MAX_BINS);
 	memset(fft_out, 0, sizeof(fftw_complex) * MAX_BINS);
 	memset(fft_m, 0, sizeof(fftw_complex) * MAX_BINS/2);
-	memset(fft_spectrum, 0, sizeof(fftw_complex) * MAX_BINS);
+	// memset(fft_spectrum, 0, sizeof(fftw_complex) * MAX_BINS);
 	memset(tx_list->fft_time, 0, sizeof(fftw_complex) * MAX_BINS);
 	memset(tx_list->fft_freq, 0, sizeof(fftw_complex) * MAX_BINS);
 /*	for (int i= 0; i < MAX_BINS/2; i++){
@@ -566,47 +566,44 @@ void my_fftw_execute(fftw_plan f){
 void rx_process(int32_t *input_rx,  int32_t *input_mic, 
 	int32_t *output_speaker, int32_t *output_tx, int n_samples)
 {
-	int i, j = 0;
-	double i_sample, q_sample;
+	int i;
+	// double i_sample, q_sample;
 
 	// STEP 1: first add the previous M samples to
 	for (i = 0; i < MAX_BINS/2; i++)
-		fft_in[i]  = fft_m[i];
+		__real__ fft_in[i] = /* __real__ fft_in[i + MAX_BINS/2]; */ __real__ fft_m[i] * spectrum_window[i];
 
 	// STEP 2: then add the new set of samples
 	// m is the index into incoming samples, starting at zero
 	// i is the index into the time samples, picking from 
 	// the samples added in the previous step
-	int m = 0;
 	// gather the samples into a time domain array 
-	for (i= MAX_BINS/2; i < MAX_BINS; i++){
-		i_sample = (1.0  *input_rx[j])/200000000.0;
-		q_sample = 0;
+	for (int m = 0, i = MAX_BINS / 2; i < MAX_BINS; i++, m++){
+		// i_sample = ((double) input_rx[m]) * 5e-09; // / 200000000.0;
+		// q_sample = 0;
 
-		j++;
+		double i_sample = __real__ fft_m[m] = ((double) input_rx[m]) * 5e-09;
+		__real__ fft_in[i] = i_sample * spectrum_window[i]; // / 200000000.0; // i_sample;
+		// __imag__ fft_in[i] = __imag__ fft_m[m] = 0.0; // q_sample;
 
-		__real__ fft_m[m] = i_sample;
-		__imag__ fft_m[m] = q_sample;
-
-		__real__ fft_in[i]  = i_sample;
-		__imag__ fft_in[i]  = q_sample;
-		m++;
+		// __real__ fft_in[i] = i_sample;
+		// __imag__ fft_in[i] = q_sample;
 	}
 
 	// STEP 3: convert the time domain samples to  frequency domain
-	my_fftw_execute(plan_fwd);
+	my_fftw_execute(plan_fwd);  // fft_in -> fft_out, forward
 
 	// STEP 3B: this is a side line, we use these frequency domain
 	// values to paint the spectrum in the user interface
 	// I discovered that the raw time samples give horrible spectrum
-	// and they need to be multiplied wiht a window function 
+	// and they need to be multiplied with a window function 
 	// they use a separate fft plan
 	// NOTE: the spectrum update has nothing to do with the actual
 	// signal processing. If you are not showing the spectrum or the
 	// waterfall, you can skip these steps
-	for (i = 0; i < MAX_BINS; i++)
-		__real__ fft_in[i] *= spectrum_window[i];
-	my_fftw_execute(plan_spectrum);
+	// for (i = 0; i < MAX_BINS; i++)
+	//    __real__ fft_in[i] *= spectrum_window[i];
+	// my_fftw_execute(plan_spectrum); // fft_in -> fft_spectrum, forward
 
 	// the spectrum display is updated
 	// spectrum_update();
@@ -620,14 +617,16 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	struct rx *r = rx_list;
 	
 	// STEP 4: we rotate the bins around by r-tuned_bin
+    #if 0
 	for (i = 0; i < MAX_BINS; i++){
-		int b =  i + r->tuned_bin;
-		if (b >= MAX_BINS)
-			b = b - MAX_BINS;
-		if (b < 0)
-			b = b + MAX_BINS;
-		r->fft_freq[i] = fft_out[b];
+        r->fft_freq[i] = fft_out[(i + r->tuned_bin) % MAX_BINS];
+		// if (b >= MAX_BINS)
+		//	b = b - MAX_BINS;
+		// if (b < 0)
+		//	b = b + MAX_BINS;
+		// r->fft_freq[i] = fft_out[b];
 	}
+    #endif
 
     #if 0
 	// STEP 5:zero out the other sideband
@@ -647,10 +646,12 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	// in frequency domain we just multiply the filter
 	// coefficients with the frequency domain samples
 	for (i = 0; i < MAX_BINS; i++)
-		r->fft_freq[i] *= r->filter->fir_coeff[i];
+        // combine rotate with filter multiply
+		r->fft_freq[i] = fft_out[(i + r->tuned_bin) % MAX_BINS] * r->filter->fir_coeff[i];
+//		r->fft_freq[i] *= r->filter->fir_coeff[i];
 
 	// STEP 7: convert back to time domain	
-	my_fftw_execute(r->plan_rev);
+	my_fftw_execute(r->plan_rev);   // fft_freq -> r->fft_time, reverse
 
 	// STEP 8 : AGC
 	agc2(r);
@@ -661,9 +662,9 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	if (rx_list->output == 0){
 		for (i= 0; i < MAX_BINS/2; i++){
 			int32_t sample;
-			sample = cimag(r->fft_time[i+(MAX_BINS/2)]);
-			// keep transmit buffer empty
+			sample = cimag(r->fft_time[i +(MAX_BINS/2)]);
 			output_speaker[i] = sample;
+			// keep transmit buffer empty
 			output_tx[i] = 0;
 		}
 
@@ -734,7 +735,7 @@ void tx_process(
 
 	struct rx *r = tx_list;
 
-	//fix the burst at the start of transmission
+	// fix the burst at the start of transmission
 	if (tx_process_restart){
     	fft_reset_m_bins();
 		tx_process_restart = 0;
@@ -779,7 +780,7 @@ void tx_process(
 		if (min > i_sample)
 			min = i_sample;
 		*/
-		//d on't echo the voice modes
+		// don't echo the voice modes
 		if (r->mode == MODE_USB || r->mode == MODE_LSB || r->mode == MODE_AM 
 			|| r->mode == MODE_NBFM)
 			output_speaker[j] = 0;
@@ -878,17 +879,27 @@ void sound_process(
 }
 
 
-void set_rx_filter(){
-	if(rx_list->mode == MODE_LSB || rx_list->mode == MODE_CWR)
+void set_rx_filter() {
+	if(rx_list->mode == MODE_LSB || rx_list->mode == MODE_CWR) {
+        // puts("LSB");
 		filter_tune(rx_list->filter, 
 			(1.0 * -rx_list->high_hz) / rate, 
 			(1.0 * -rx_list->low_hz) / rate, 
 			5);
-	else
+    } else {
+        // puts("USB");
 		filter_tune(rx_list->filter, 
 			(1.0 * rx_list->low_hz) / rate, 
 			(1.0 * rx_list->high_hz) / rate, 
 			5);
+    }
+    #if 0
+    complex float *fir = rx_list->filter->fir_coeff;
+    for (int i = 0; i < MAX_BINS; i++, fir++) {
+        if (cabs(*fir) > 0.01)
+            printf("%3d: %5.2f + %5.2fi\r\n", i, creal(*fir), cimag(*fir));
+    }
+    #endif
 }
 
 /* 

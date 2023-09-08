@@ -349,7 +349,8 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 		// the bins are at lowest frequency (-ve frequency)
 		// y axis is the power in db of each bin, scaled to 80 db
 		// y = ((spectrum_plot[i] + waterfall_offset) * f_spectrum->height) / 80; 
-		y = (((10 * log10f(cnrmf(fft_spectrum[i]))) + waterfall_offset) * f_spectrum->height) / 80; 
+		// y = (((10 * log10f(cnrmf(fft_spectrum[i]))) + waterfall_offset) * f_spectrum->height) / 80; 
+		y = (((10 * log10f(cnrmf(fft_out[i]))) + waterfall_offset) * f_spectrum->height) / 80; 
 		// limit y inside the spectrum display box
 		if (y <  0)
 			y = 0;
