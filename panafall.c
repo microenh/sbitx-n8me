@@ -206,7 +206,7 @@ static float old_span;
 static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
 	int y, sub_division, bw_high, bw_low, pitch, freq;
 	float span;
-    static const double BIN_PER_HZ = (double) MAX_BINS / rate; // 1.0 / 46.875; // reciprocal of Hz/Bin
+    static const double BIN_PER_HZ = (double) MAX_BINS / RX_SAMPLE_RATE; // 1.0 / 46.875; // reciprocal of Hz/Bin
 
 
 	pitch = atoi(get_field(RX_PITCH)->value);
@@ -312,7 +312,6 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 
 	// clear the spectrum	
 	fill_rect(gfx, f_spectrum->x, f_spectrum->y, f_spectrum->width, f_spectrum->height, SPECTRUM_BACKGROUND);
-	// fill_rect(gfx, f_spectrum->x, f_spectrum->y, f_spectrum->width, grid_height, SPECTRUM_BACKGROUND);
 
 
 	// draw the frequency readout at the bottom
@@ -346,7 +345,7 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 		int y;
 
 		// the center fft bin is at zero, from MAX_BINS/2 onwards,
-		// the bins are at lowest frequency (-ve frequency)
+		// the bins are at lowest frequency (negative frequency)
 		// y axis is the power in db of each bin, scaled to 80 db
 		// y = ((spectrum_plot[i] + waterfall_offset) * f_spectrum->height) / 80; 
 		// y = (((10 * log10f(cnrmf(fft_spectrum[i]))) + waterfall_offset) * f_spectrum->height) / 80; 

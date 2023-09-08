@@ -322,7 +322,7 @@ void wav_record(int32_t *samples, int count){
 	int16_t *w;
 	int32_t *s;
 	int i = 0, j = 0;
-	int decimation_factor = rate / 12000; 
+	int decimation_factor = RX_SAMPLE_RATE / 12000; 
 
 	if (!pf_record)
 		return;
@@ -355,7 +355,7 @@ void tx_init(int frequency, short mode, int bpf_low, int bpf_high){
 	// the tuning can go up and down only by 22 KHz from the center_freq
 
 	tx_filter = filter_new(1024, 1025);
-	filter_tune(tx_filter, (1.0 * bpf_low) / rate, (1.0 * bpf_high) / rate , 5);
+	filter_tune(tx_filter, (1.0 * bpf_low) / RX_SAMPLE_RATE, (1.0 * bpf_high) / RX_SAMPLE_RATE , 5);
 }
 
 struct rx *add_tx(int frequency, short mode, int bpf_low, int bpf_high){
@@ -378,7 +378,7 @@ struct rx *add_tx(int frequency, short mode, int bpf_low, int bpf_high){
 	r->mode = mode;
 	
 	r->filter = filter_new(1024, 1025);
-	filter_tune(r->filter, (1.0 * bpf_low) / rate, (1.0 * bpf_high)/ rate , 5);
+	filter_tune(r->filter, (1.0 * bpf_low) / RX_SAMPLE_RATE, (1.0 * bpf_high)/ RX_SAMPLE_RATE , 5);
 
 	if (abs(bpf_high - bpf_low) < 1000){
 		r->agc_speed = 10;
@@ -418,7 +418,7 @@ struct rx *add_rx(int frequency, short mode, int bpf_low, int bpf_high){
 	r->mode = mode;
 	
 	r->filter = filter_new(1024, 1025);
-	filter_tune(r->filter, (1.0 * bpf_low) / rate, (1.0 * bpf_high) / rate , 5);
+	filter_tune(r->filter, (1.0 * bpf_low) / RX_SAMPLE_RATE, (1.0 * bpf_high) / RX_SAMPLE_RATE , 5);
 
 	if (abs(bpf_high - bpf_low) < 1000){
 		r->agc_speed = 300;
@@ -883,14 +883,14 @@ void set_rx_filter() {
 	if(rx_list->mode == MODE_LSB || rx_list->mode == MODE_CWR) {
         // puts("LSB");
 		filter_tune(rx_list->filter, 
-			(1.0 * -rx_list->high_hz) / rate, 
-			(1.0 * -rx_list->low_hz) / rate, 
+			(1.0 * -rx_list->high_hz) / RX_SAMPLE_RATE, 
+			(1.0 * -rx_list->low_hz) / RX_SAMPLE_RATE, 
 			5);
     } else {
         // puts("USB");
 		filter_tune(rx_list->filter, 
-			(1.0 * rx_list->low_hz) / rate, 
-			(1.0 * rx_list->high_hz) / rate, 
+			(1.0 * rx_list->low_hz) / RX_SAMPLE_RATE, 
+			(1.0 * rx_list->high_hz) / RX_SAMPLE_RATE, 
 			5);
     }
     #if 0
@@ -1321,30 +1321,30 @@ void sdr_request(char *request, char *response){
 
 		if (rx_list->mode == MODE_LSB || rx_list->mode == MODE_CWR){
 			filter_tune(rx_list->filter, 
-				(1.0 * -3000) / rate, 
-				(1.0 * -300) / rate, 
+				(1.0 * -3000) / RX_SAMPLE_RATE, 
+				(1.0 * -300) / RX_SAMPLE_RATE, 
 				5);
 			// puts("\n\n\ntx filter ");
 			filter_tune(tx_list->filter, 
-				(1.0 * -3000) / rate, 
-				(1.0 * -300) / rate, 
+				(1.0 * -3000) / RX_SAMPLE_RATE, 
+				(1.0 * -300) / RX_SAMPLE_RATE, 
 				5);
 			filter_tune(tx_filter, 
-				(1.0 * -3000) / rate, 
-				(1.0 * -300) / rate, 
+				(1.0 * -3000) / RX_SAMPLE_RATE, 
+				(1.0 * -300) / RX_SAMPLE_RATE, 
 				5);
 		} else { 
 			filter_tune(rx_list->filter, 
-				(1.0 * 300) / rate, 
-				(1.0 * 3000) / rate, 
+				(1.0 * 300) / RX_SAMPLE_RATE, 
+				(1.0 * 3000) / RX_SAMPLE_RATE, 
 				5);
 			filter_tune(tx_list->filter, 
-				(1.0 * 300) / rate, 
-				(1.0 * 3000) / rate, 
+				(1.0 * 300) / RX_SAMPLE_RATE, 
+				(1.0 * 3000) / RX_SAMPLE_RATE, 
 				5);
 			filter_tune(tx_filter, 
-				(1.0 * 300) / rate, 
-				(1.0 * 3000) / rate, 
+				(1.0 * 300) / RX_SAMPLE_RATE, 
+				(1.0 * 3000) / RX_SAMPLE_RATE, 
 				5);
 		}
 		
@@ -1353,9 +1353,9 @@ void sdr_request(char *request, char *response){
 	} else if (!strcmp(cmd, "txmode")){
 		puts("\n\n\n\n###### tx filter #######");
 		if (!strcmp(value, "LSB") || !strcmp(value, "CWR"))
-			filter_tune(tx_filter, (1.0*-3000) / rate, (1.0 * -300) / rate, 5);
+			filter_tune(tx_filter, (1.0*-3000) / RX_SAMPLE_RATE, (1.0 * -300) / RX_SAMPLE_RATE, 5);
 		else
-			filter_tune(tx_filter, (1.0*300) / rate, (1.0*3000) / rate, 5);
+			filter_tune(tx_filter, (1.0*300) / RX_SAMPLE_RATE, (1.0*3000) / RX_SAMPLE_RATE, 5);
 	} else if(!strcmp(cmd, "record")){
 		if (!strcmp(value, "off")){
 			fclose(pf_record);

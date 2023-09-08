@@ -125,7 +125,6 @@ void sound_mixer(char *card_name, char *element, int make_on)
     snd_mixer_close(handle);
 }
 
-// const int rate = 96000; /* Sample rate */
 static snd_pcm_uframes_t buff_size = 8192; /* Periodsize (bytes) */
 static int n_periods_per_buffer = 2;       /* Number of periods */
 //static int n_periods_per_buffer = 1024;       /* Number of periods */
@@ -209,14 +208,14 @@ int sound_start_play(char *device){
 
 	/* Set sample rate. If the exact rate is not supported */
 	/* by the hardware, use nearest possible rate.         */ 
-	exact_rate = rate;
+	exact_rate = RX_SAMPLE_RATE;
 	e = snd_pcm_hw_params_set_rate_near(pcm_play_handle, hwparams, &exact_rate, 0);
 	if ( e< 0) {
 		fprintf(stderr, "Error setting playback rate.\n");
 		return(-1);
 	}
-	if (rate != exact_rate)
-		fprintf(stderr, "*The playback rate %d changed to %d Hz\n", rate, exact_rate);
+	if (RX_SAMPLE_RATE != exact_rate)
+		fprintf(stderr, "*The playback rate %d changed to %d Hz\n", RX_SAMPLE_RATE, exact_rate);
     /* else
         fprintf(stderr, "Playback sampling rate is set to %d\n", exact_rate);
     */
@@ -388,15 +387,15 @@ int sound_start_capture(char *device){
 
 	/* Set sample rate. If the exact rate is not supported */
 	/* by the hardware, use nearest possible rate.         */ 
-	exact_rate = rate;
+	exact_rate = RX_SAMPLE_RATE;
 	e = snd_pcm_hw_params_set_rate_near(pcm_capture_handle, hwparams, &exact_rate, 0);
 	if ( e< 0) {
 		fprintf(stderr, "*Error setting capture rate.\n");
 		return(-1);
 	}
 
-	if (rate != exact_rate)
-		fprintf(stderr, "#The capture rate %d changed to %d Hz\n", rate, exact_rate);
+	if (RX_SAMPLE_RATE != exact_rate)
+		fprintf(stderr, "#The capture rate %d changed to %d Hz\n", RX_SAMPLE_RATE, exact_rate);
 
 
 	/* Set number of channels */
@@ -472,7 +471,7 @@ int sound_start_loopback_play(char *device){
 		return(-1);
 	}
 	if (48000 != exact_rate)
-		fprintf(stderr, "*The loopback playback rate %d changed to %d Hz\n", rate, exact_rate);
+		fprintf(stderr, "*The loopback playback rate %d changed to %d Hz\n", 48000, exact_rate);
 
 
 	/* Set number of channels */

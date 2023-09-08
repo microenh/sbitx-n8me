@@ -68,8 +68,7 @@ have continuos waveform.
 */
 
 #define MAX_BINS 2048
-#define rate 96000
-// extern const int rate;
+#define RX_SAMPLE_RATE 96000
 
 /*
 All the incoming samples are converted to frequency domain in sound_process(). 
