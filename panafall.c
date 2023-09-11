@@ -238,7 +238,7 @@ static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
 
     int display_ofs = 0;
     if (span < 10.0) {
-        display_ofs = span * 400;
+        // display_ofs = span * 400;
     }
 
     int fc_bin = (int) (display_ofs * BIN_PER_HZ);
@@ -248,13 +248,14 @@ static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
 	grid_height = f_spectrum->height - ((font_table[FONT_SMALL].height * 4) / 3);
 	sub_division = f_spectrum->width / 10;
 
-    if (span <= 20) {
+    if (span <= 20 && 0) {
         grid_ofs = -(freq % freq_div) * pixels_per_hz;
         freq_ofs = -(freq % (2 * freq_div)) * pixels_per_hz;
         f_start = freq - (freq % (2 * freq_div));
     } else {
         grid_ofs = freq_ofs = 0;
-        f_start = freq - (4 * freq_div) - display_ofs; 
+        f_start = freq  - (4 * freq_div) - display_ofs; 
+        // printf("f_start: %d\r\n", f_start);
     }
 
 	// calculate the position of bandwidth strip
