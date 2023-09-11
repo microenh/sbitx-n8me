@@ -49,8 +49,8 @@ int sbitx_version = SBITX_V2;
 int fwdpower, vswr;
 float fft_bins[MAX_BINS]; // spectrum amplitudes  
 // int spectrum_plot[MAX_BINS];
-// fftw_complex *fft_spectrum;
-// fftw_plan plan_spectrum;
+fftw_complex *fft_spectrum;
+fftw_plan plan_spectrum;
 float spectrum_window[MAX_BINS];
 void set_rx1(int frequency);
 void tr_switch(int tx_on);
@@ -144,15 +144,15 @@ void fft_init(){
 	fft_m = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS / 2);
 	fft_in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
 	fft_out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
-	// fft_spectrum = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
+	fft_spectrum = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
 
-	// memset(fft_spectrum, 0, sizeof(fftw_complex) * MAX_BINS);
+	memset(fft_spectrum, 0, sizeof(fftw_complex) * MAX_BINS);
 	memset(fft_in, 0, sizeof(fftw_complex) * MAX_BINS);
 	memset(fft_out, 0, sizeof(fftw_complex) * MAX_BINS);
 	memset(fft_m, 0, sizeof(fftw_complex) * MAX_BINS / 2);
 
 	plan_fwd = fftw_plan_dft_1d(MAX_BINS, fft_in, fft_out, FFTW_FORWARD, FFTW_ESTIMATE);
-	// plan_spectrum = fftw_plan_dft_1d(MAX_BINS, fft_in, fft_spectrum, FFTW_FORWARD, FFTW_ESTIMATE);
+	plan_spectrum = fftw_plan_dft_1d(MAX_BINS, fft_in, fft_spectrum, FFTW_FORWARD, FFTW_ESTIMATE);
 
 	// zero up the previous 'M' bins
 	for (int i= 0; i < MAX_BINS/2; i++){
@@ -168,7 +168,7 @@ void fft_reset_m_bins(){
 	memset(fft_in, 0, sizeof(fftw_complex) * MAX_BINS);
 	memset(fft_out, 0, sizeof(fftw_complex) * MAX_BINS);
 	memset(fft_m, 0, sizeof(fftw_complex) * MAX_BINS/2);
-	// memset(fft_spectrum, 0, sizeof(fftw_complex) * MAX_BINS);
+	memset(fft_spectrum, 0, sizeof(fftw_complex) * MAX_BINS);
 	memset(tx_list->fft_time, 0, sizeof(fftw_complex) * MAX_BINS);
 	memset(tx_list->fft_freq, 0, sizeof(fftw_complex) * MAX_BINS);
 /*	for (int i= 0; i < MAX_BINS/2; i++){
@@ -591,6 +591,8 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	}
 
 	// STEP 3: convert the time domain samples to  frequency domain
+	for (i = 0; i < MAX_BINS; i++)
+	    __real__ fft_in[i] *= spectrum_window[i];
 	my_fftw_execute(plan_fwd);  // fft_in -> fft_out, forward
 
 	// STEP 3B: this is a side line, we use these frequency domain
@@ -601,9 +603,9 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	// NOTE: the spectrum update has nothing to do with the actual
 	// signal processing. If you are not showing the spectrum or the
 	// waterfall, you can skip these steps
-	for (i = 0; i < MAX_BINS; i++)
-	    __real__ fft_in[i] *= spectrum_window[i];
-	my_fftw_execute(plan_fwd); // fft_in -> fft_spectrum, forward
+	// for (i = 0; i < MAX_BINS; i++)
+	//     __real__ fft_in[i] *= spectrum_window[i];
+	my_fftw_execute(plan_spectrum); // fft_in -> fft_spectrum, forward
 
 	// the spectrum display is updated
 	// spectrum_update();
