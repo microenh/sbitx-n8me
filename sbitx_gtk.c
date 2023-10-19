@@ -2401,10 +2401,10 @@ static void ui_init(int argc, char *argv[]){
 		font_table[i].height = (font_table[i].height * screen_height)/480;
 	scale_ui();	
 	gtk_widget_show_all(window);
-	if ((argc > 1) && (argv[1][0] == 'f'))
+//	if ((argc > 1) && (argv[1][0] == 'f'))
 	    gtk_window_fullscreen(GTK_WINDOW(window));
-	else
-	    gtk_window_get_default_widget(GTK_WINDOW(window));
+	// else
+	//     gtk_window_get_default_widget(GTK_WINDOW(window));
 
 	focus_field(get_field(R1_VOLUME));
 }
