@@ -2,7 +2,6 @@
 The initial sync between the gui values, the core radio values, settings, et al are manually set.
 */
 
-
 #include <arpa/inet.h>
 #include <cairo.h>
 #include <ctype.h>
