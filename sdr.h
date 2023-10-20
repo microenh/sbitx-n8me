@@ -116,6 +116,8 @@ struct filter {
 	int N;
 	int L;
 	int M;
+    fftwf_plan fwd;
+    fftwf_plan rev;
 };
 
 struct filter *filter_new(int input_length, int impulse_length);

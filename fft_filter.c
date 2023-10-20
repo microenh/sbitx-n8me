@@ -79,89 +79,25 @@ int make_hann_window(float *window, int max_count){
 // Impulse response will be limited to first M samples in the time domain
 // Phase is adjusted so "time zero" (center of impulse response) is at M/2
 // L and M refer to the decimated output
-int window_filter(int const L, int const M, complex float * const response, float const beta){
-	// total length of the convolving samples
-    int const N = L + M - 1;
+int window_filter(struct filter *f, float const beta){
+    fftwf_execute(f->rev);
 
-    // fftw_plan can overwrite its buffers, so we're forced to make a temp. Ugh.
-    // complex float * const buffer = fftwf_alloc_complex(N);
-    // fftwf_plan fwd_filter_plan = fftwf_plan_dft_1d(N,buffer,buffer,FFTW_FORWARD,FFTW_ESTIMATE);
-    // fftwf_plan rev_filter_plan = fftwf_plan_dft_1d(N,buffer,buffer,FFTW_BACKWARD,FFTW_ESTIMATE);
-    fftwf_plan fwd_filter_plan = fftwf_plan_dft_1d(N,response,response,FFTW_FORWARD,FFTW_ESTIMATE);
-    fftwf_plan rev_filter_plan = fftwf_plan_dft_1d(N,response,response,FFTW_BACKWARD,FFTW_ESTIMATE);
-
-    // Convert to time domain
-    // memcpy(buffer,response,N*sizeof(*buffer));
-    fftwf_execute(rev_filter_plan);
-    fftwf_destroy_plan(rev_filter_plan);
-
-    float kaiser_window[M];
-    make_kaiser(kaiser_window,M,beta);
-
-    #if 0 
-    for(int n = 0; n < N; n++)
-        printf("# time[%d] = %lg, %lg\n", n, crealf(buffer[n]), cimagf(buffer[n]));
-    #endif
-
-    #if 0 
-    for(int m = 0; m < M; m++)
-        printf("# kaiser[%d] = %g\n",m,kaiser_window[m]);
-    #endif  
+    float kaiser_window[f->M];
+    make_kaiser(kaiser_window, f->M, beta);
 
     // Round trip through FFT/IFFT scales by N
     float const gain = 1.0;
 
-	//shift the buffer to make it causal
-    for(int n = M - 1; n >= 0; n--)
-        // buffer[n] = buffer[(n-M/2+N) % N];
-        response[n] = response[(n-M/2+N) % N];
-
-    #if 0
-    printf("#Filter time impulse response, shifted\n");
-    for(int n=0;n< N;n++)
-        printf("# %d %lg %lg\n",n,crealf(buffer[n]),cimagf(buffer[n]));
-    #endif
-
-    // apply window and gain
-    for(int n = M - 1; n >= 0; n--)
-        // buffer[n] = buffer[n] * kaiser_window[n] * gain;
-        response[n] = response[n] * kaiser_window[n] * gain;
-    #if 0
-    printf("#Filter time impulse response, windowed and gain adjusted\n");
-    for(int n=0;n< N;n++)
-        printf("# %d %lg %lg\n",n,crealf(buffer[n]),cimagf(buffer[n]));
-    #endif
+	//shift the buffer to make it causal, apply window and gain
+    for(int n=f->M-1; n>=0; n--)
+        f->fir_coeff[n] = f->fir_coeff[(n-f->M/2+f->N) % f->N] * kaiser_window[n] * gain;
 	
     // Pad with zeroes on right side
-    memset(response+M,0,(N-M)*sizeof(*response));
+    memset(f->fir_coeff+f->M, 0, (f->N-f->M) * sizeof(*f->fir_coeff));
 
-    #if 0 
-    printf("# Filter time impulse response  zero padded\n");
-    for(int n=0;n< N;n++)
-        printf("# %d %lg %lg\n",n,crealf(buffer[n]),cimagf(buffer[n]));
-    #endif
-  
     // Now back to frequency domain
-    fftwf_execute(fwd_filter_plan);
-    fftwf_destroy_plan(fwd_filter_plan);
+    fftwf_execute(f->fwd);
 
-    #if 0 
-    printf("#Filter Frequency response amplitude\n");
-    for(int n=0;n<N;n++){
-        printf("#%d %.1f db\n",n,power2dB(cnrmf(buffer[n])));
-    }
-    printf("\n");
-    #endif
-    // memcpy(response,buffer,N*sizeof(*response));
-
-    #if 0 
-    printf("#Filter windowed FIR frequency coefficients\n");
-	for(int n=0;n<N;n++){
-        printf("%d,%.17f,%.17f\n", n, crealf(buffer[n]), cimagf(buffer[n]));
-    }
-    #endif
-
-    // fftwf_free(buffer);
     return 0;
 }
 
@@ -172,7 +108,10 @@ struct filter *filter_new(int input_length, int impulse_length){
 	f->M = impulse_length;
     f->N = f->L + f->M - 1;
     f->fir_coeff = fftwf_alloc_complex(f->N);
-	
+
+    f->fwd = fftwf_plan_dft_1d(f->N, f->fir_coeff, f->fir_coeff, FFTW_FORWARD, FFTW_MEASURE);
+    f->rev = fftwf_plan_dft_1d(f->N, f->fir_coeff, f->fir_coeff, FFTW_BACKWARD, FFTW_MEASURE);
+
 	return f;
 }
 
@@ -203,7 +142,7 @@ int filter_tune(struct filter *f, float const low, float const high, float const
         // printf("#1 %d  %g  %g %g before windowing: %g,%g\n", n, s, low, high, creal(f->fir_coeff[n]), cimag(f->fir_coeff[n]));
     }
 
-    window_filter(f->L, f->M, f->fir_coeff, kaiser_beta);
+    window_filter(f, kaiser_beta);
     return 0;
 }
 
