@@ -55,10 +55,10 @@ float spectrum_window[MAX_BINS];
 void set_rx1(int frequency);
 void tr_switch(int tx_on);
 
-fftw_complex *fft_out;	// holds the incoming samples in freq domain (for rx as well as tx)
-fftw_complex *fft_in;	// holds the incoming samples in time domain (for rx as well as tx) 
-fftw_complex *fft_m;	// holds previous samples for overlap and discard convolution 
-fftw_plan plan_fwd, plan_tx;
+static fftw_complex *fft_out;	// holds the incoming samples in freq domain (for rx as well as tx)
+static fftw_complex *fft_in;	// holds the incoming samples in time domain (for rx as well as tx) 
+static fftw_complex *fft_m;	// holds previous samples for overlap and discard convolution 
+fftw_plan plan_fwd;
 int bfo_freq = 40035000;
 int freq_hdr = -1;
 
@@ -134,52 +134,31 @@ void radio_tune_to(uint32_t f){
 }
 
 void fft_init(){
-	// int mem_needed;
-
-	// printf("initializing the fft\n");
 	fflush(stdout);
 
-	// mem_needed = sizeof(fftw_complex) * MAX_BINS;
-
-	// fft_m = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS / 2);
-	// fft_in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
-	// fft_out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
-	// fft_spectrum = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
 	fft_m = fftw_alloc_complex(MAX_BINS / 2);
 	fft_in = fftw_alloc_complex(MAX_BINS);
 	fft_out = fftw_alloc_complex(MAX_BINS);
 	fft_spectrum = fftw_alloc_complex(MAX_BINS);
 
-	// memset(fft_spectrum, 0, sizeof(fftw_complex) * MAX_BINS);
-	// memset(fft_in, 0, sizeof(fftw_complex) * MAX_BINS);
-	// memset(fft_out, 0, sizeof(fftw_complex) * MAX_BINS);
-	// memset(fft_m, 0, sizeof(fftw_complex) * MAX_BINS / 2);
-
 	plan_fwd = fftw_plan_dft_1d(MAX_BINS, fft_in, fft_out, FFTW_FORWARD, FFTW_MEASURE);
 	plan_spectrum = fftw_plan_dft_1d(MAX_BINS, fft_in, fft_spectrum, FFTW_FORWARD, FFTW_MEASURE);
 
 	// zero up the previous 'M' bins
-	for (int i= 0; i < MAX_BINS/2; i++)
-        fft_m[i] = (fftw_complex) 0;
-		//__real__ fft_m[i] = __imag__ fft_m[i] = 0.0;
-
+	memset(fft_m, 0, sizeof(fftw_complex) * MAX_BINS / 2);
 
 	make_hann_window(spectrum_window, MAX_BINS);
 }
 
-void fft_reset_m_bins(){
+static void fft_reset_m_bins(void){
 	// zero up the previous 'M' bins
+	memset(fft_m, 0, sizeof(fftw_complex) * MAX_BINS/2);
+
 	memset(fft_in, 0, sizeof(fftw_complex) * MAX_BINS);
 	memset(fft_out, 0, sizeof(fftw_complex) * MAX_BINS);
-	memset(fft_m, 0, sizeof(fftw_complex) * MAX_BINS/2);
 	memset(fft_spectrum, 0, sizeof(fftw_complex) * MAX_BINS);
 	memset(tx_list->fft_time, 0, sizeof(fftw_complex) * MAX_BINS);
 	memset(tx_list->fft_freq, 0, sizeof(fftw_complex) * MAX_BINS);
-/*	for (int i= 0; i < MAX_BINS/2; i++){
-		__real__ fft_m[i]  = 0.0;
-		__imag__ fft_m[i]  = 0.0;
-	}
-*/
 }
 
 int mag2db(double mag){
@@ -191,7 +170,7 @@ int mag2db(double mag){
 		if (p & m)
 			break;
 		c--;
-		p = p >> 1;
+		p >>= 1;
 	}
 	return c;
 }
@@ -202,7 +181,7 @@ void set_spectrum_speed(int speed){
 		fft_bins[i] = 0;
 }
 
-void spectrum_reset(){
+void spectrum_reset(void){
 	for (int i = 0; i < MAX_BINS; i++)
 		fft_bins[i] = 0;
 }
@@ -361,7 +340,7 @@ void tx_init(int frequency, short mode, int bpf_low, int bpf_high){
 	// the tuning can go up and down only by 22 KHz from the center freq
 
 	tx_filter = filter_new(1024, 1025);
-	filter_tune(tx_filter, (1.0 * bpf_low) / RX_SAMPLE_RATE, (1.0 * bpf_high) / RX_SAMPLE_RATE , 5);
+	filter_tune(tx_filter, (1.0 * bpf_low) / RX_SAMPLE_RATE, (1.0 * bpf_high) / RX_SAMPLE_RATE, 5);
 }
 
 struct rx *add_tx(int frequency, short mode, int bpf_low, int bpf_high){
@@ -384,7 +363,7 @@ struct rx *add_tx(int frequency, short mode, int bpf_low, int bpf_high){
 	r->mode = mode;
 	
 	r->filter = filter_new(1024, 1025);
-	filter_tune(r->filter, (1.0 * bpf_low) / RX_SAMPLE_RATE, (1.0 * bpf_high)/ RX_SAMPLE_RATE , 5);
+	filter_tune(r->filter, (1.0 * bpf_low) / RX_SAMPLE_RATE, (1.0 * bpf_high) / RX_SAMPLE_RATE, 5);
 
 	if (abs(bpf_high - bpf_low) < 1000){
 		r->agc_speed = 10;
