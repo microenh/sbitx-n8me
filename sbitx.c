@@ -566,50 +566,37 @@ void my_fftw_execute(fftw_plan f){
 void rx_process(int32_t *input_rx,  int32_t *input_mic, 
 	int32_t *output_speaker, int32_t *output_tx, int n_samples)
 {
-	int i;
-	// double i_sample, q_sample;
+	//STEP 1: first add the previous M samples to
+	for (int i=0; i<MAX_BINS/2; i++)
+		fft_in[i] = fft_m[i];
 
-	// STEP 1: first add the previous M samples to
-	for (i = 0; i < MAX_BINS/2; i++)
-		__real__ fft_in[i] = __real__ fft_m[i];
-
-	// STEP 2: then add the new set of samples
+	//STEP 2: then add the new set of samples
 	// m is the index into incoming samples, starting at zero
 	// i is the index into the time samples, picking from 
 	// the samples added in the previous step
 	// gather the samples into a time domain array 
-	for (int m = 0, i = MAX_BINS / 2; i < MAX_BINS; i++, m++){
-		// i_sample = ((double) input_rx[m]) * 5e-09; // / 200000000.0;
-		// q_sample = 0;
-
-		__real__ fft_in[i] = __real__ fft_m[m] = ((double) input_rx[m]) * 5e-09;
-		// __real__ fft_in[i] = i_sample; // * spectrum_window[i]; // / 200000000.0; // i_sample;
-		// __imag__ fft_in[i] = __imag__ fft_m[m] = 0.0; // q_sample;
-
-		// __real__ fft_in[i] = i_sample;
-		// __imag__ fft_in[i] = q_sample;
+	for (int i=MAX_BINS/2, j=0; i < MAX_BINS; i++, j++){
+		__real__ fft_in[i] = __real__ fft_m[j] = input_rx[j] * 5e-09;
+		__imag__ fft_in[i] = __imag__ fft_m[j] = 0.0;
 	}
 
 	// STEP 3: convert the time domain samples to  frequency domain
-	for (i = 0; i < MAX_BINS; i++)
-	    __real__ fft_in[i] *= spectrum_window[i];
-	my_fftw_execute(plan_fwd);  // fft_in -> fft_out, forward
+	my_fftw_execute(plan_fwd);
 
-	// STEP 3B: this is a side line, we use these frequency domain
+	//STEP 3B: this is a side line, we use these frequency domain
 	// values to paint the spectrum in the user interface
 	// I discovered that the raw time samples give horrible spectrum
-	// and they need to be multiplied with a window function 
+	// and they need to be multiplied wiht a window function 
 	// they use a separate fft plan
 	// NOTE: the spectrum update has nothing to do with the actual
 	// signal processing. If you are not showing the spectrum or the
 	// waterfall, you can skip these steps
-	// for (i = 0; i < MAX_BINS; i++)
-	//     __real__ fft_in[i] *= spectrum_window[i];
-	my_fftw_execute(plan_spectrum); // fft_in -> fft_spectrum, forward
+	for (int i=0; i<MAX_BINS; i++)
+	    __real__ fft_in[i] *= spectrum_window[i];
+	my_fftw_execute(plan_spectrum);
 
-	// the spectrum display is updated
+	// the spectrum display is updated - not needed, called elsewhere
 	// spectrum_update();
-
 
 	// ... back to the actual processing, after spectrum update  
 
@@ -618,60 +605,39 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	// at present, we handle just the first receiver
 	struct rx *r = rx_list;
 	
-	// STEP 4: we rotate the bins around by r-tuned_bin
-    #if 0
-	for (i = 0; i < MAX_BINS; i++){
-        r->fft_freq[i] = fft_out[(i + r->tuned_bin) % MAX_BINS];
-		// if (b >= MAX_BINS)
-		//	b = b - MAX_BINS;
-		// if (b < 0)
-		//	b = b + MAX_BINS;
-		// r->fft_freq[i] = fft_out[b];
+	//STEP 4: we rotate the bins around by r-tuned_bin
+    // for (i = 0; i < MAX_BINS; i++)
+    //     r->fft_freq[i] = fft_out[(i + r->tuned_bin) % MAX_BINS];
+
+	for (int i=0, b=r->tuned_bin; i<MAX_BINS; i++, b++){
+		if (b >= MAX_BINS)
+			b -= MAX_BINS;
+		r->fft_freq[i] = fft_out[b] * r->filter->fir_coeff[i];
 	}
-    #endif
 
-    #if 0
-	// STEP 5:zero out the other sideband
-	if (r->mode == MODE_LSB || r->mode == MODE_CWR)
-		for (i = 0; i < MAX_BINS/2; i++){
-			__real__ r->fft_freq[i] = 0;
-			__imag__ r->fft_freq[i] = 0;	
-		}
-	else  
-		for (i = MAX_BINS/2; i < MAX_BINS; i++){
-			__real__ r->fft_freq[i] = 0;
-			__imag__ r->fft_freq[i] = 0;	
-		}
-    #endif
+    // STEP 5: zero out the other sideband - not needed, handled by filter
+    // STEP 6: apply the filter - not needed, done in rotate step
 
-	// STEP 6: apply the filter to the signal,
-	// in frequency domain we just multiply the filter
-	// coefficients with the frequency domain samples
-	for (i = 0; i < MAX_BINS; i++)
-        // combine rotate with filter multiply
-		r->fft_freq[i] = fft_out[(i + r->tuned_bin) % MAX_BINS] * r->filter->fir_coeff[i];
-//		r->fft_freq[i] *= r->filter->fir_coeff[i];
+	//STEP 7: convert back to time domain	
+	my_fftw_execute(r->plan_rev);
 
-	// STEP 7: convert back to time domain	
-	my_fftw_execute(r->plan_rev);   // fft_freq -> r->fft_time, reverse
-
-	// STEP 8 : AGC
+	//STEP 8 : AGC
 	agc2(r);
 	
-	// STEP 9: send the output back to where it needs to go
+	//STEP 9: send the output back to where it needs to go
 	int is_digital = 0;
 
 	if (rx_list->output == 0){
-		for (i= 0; i < MAX_BINS/2; i++){
+		for (int i=0; i<MAX_BINS/2; i++){
 			int32_t sample;
-			sample = cimag(r->fft_time[i +(MAX_BINS/2)]);
+			sample = cimag(r->fft_time[i+(MAX_BINS/2)]);
+			//keep transmit buffer empty
 			output_speaker[i] = sample;
-			// keep transmit buffer empty
 			output_tx[i] = 0;
 		}
 
-		// push the samples to the remote audio queue, decimated to 16000 samples/sec
-		for (i = 0; i < MAX_BINS/2; i += 6)
+		//push the samples to the remote audio queue, decimated to 16000 samples/sec
+		for (int i=0; i<MAX_BINS/2; i+=6)
 			q_write(&qremote, output_speaker[i]);
 
 	}
@@ -681,11 +647,10 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 		mute_count--;
 	}
 
-	// push the data to any potential modem
-	#ifndef N8ME 
+	//push the data to any potential modem 
 	modem_rx(rx_list->mode, output_speaker, MAX_BINS/2);
-	#endif
 }
+
 
 void read_power(){
 	uint8_t response[4];
