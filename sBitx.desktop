@@ -1,9 +1,8 @@
 [Desktop Entry]
-Type=Link
-Name=sBitx
-Icon=/home/pi/sbitx/sbitx_icon.png
-URL=/home/pi/.local/share/applications/alacarte-made-2.desktop
-Exec=/home/pi/sbitx/sbitx
-Name[en_US]=sBitx
-Terminal=true
-Categories=hamradio;
+Type=Application
+Name=n8me
+Icon=/home/pi/sbitx-n8me/sbitx_icon_old.png
+Exec=/home/pi/sbitx-n8me/build/sBitx
+Name[en_US]=n8me
+Terminal=false
+Categories=None;

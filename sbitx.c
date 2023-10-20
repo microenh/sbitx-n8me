@@ -134,31 +134,35 @@ void radio_tune_to(uint32_t f){
 }
 
 void fft_init(){
-	int mem_needed;
+	// int mem_needed;
 
 	// printf("initializing the fft\n");
 	fflush(stdout);
 
-	mem_needed = sizeof(fftw_complex) * MAX_BINS;
+	// mem_needed = sizeof(fftw_complex) * MAX_BINS;
 
-	fft_m = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS / 2);
-	fft_in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
-	fft_out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
-	fft_spectrum = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
+	// fft_m = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS / 2);
+	// fft_in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
+	// fft_out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
+	// fft_spectrum = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
+	fft_m = fftw_alloc_complex(MAX_BINS / 2);
+	fft_in = fftw_alloc_complex(MAX_BINS);
+	fft_out = fftw_alloc_complex(MAX_BINS);
+	fft_spectrum = fftw_alloc_complex(MAX_BINS);
 
-	memset(fft_spectrum, 0, sizeof(fftw_complex) * MAX_BINS);
-	memset(fft_in, 0, sizeof(fftw_complex) * MAX_BINS);
-	memset(fft_out, 0, sizeof(fftw_complex) * MAX_BINS);
-	memset(fft_m, 0, sizeof(fftw_complex) * MAX_BINS / 2);
+	// memset(fft_spectrum, 0, sizeof(fftw_complex) * MAX_BINS);
+	// memset(fft_in, 0, sizeof(fftw_complex) * MAX_BINS);
+	// memset(fft_out, 0, sizeof(fftw_complex) * MAX_BINS);
+	// memset(fft_m, 0, sizeof(fftw_complex) * MAX_BINS / 2);
 
-	plan_fwd = fftw_plan_dft_1d(MAX_BINS, fft_in, fft_out, FFTW_FORWARD, FFTW_ESTIMATE);
-	plan_spectrum = fftw_plan_dft_1d(MAX_BINS, fft_in, fft_spectrum, FFTW_FORWARD, FFTW_ESTIMATE);
+	plan_fwd = fftw_plan_dft_1d(MAX_BINS, fft_in, fft_out, FFTW_FORWARD, FFTW_MEASURE);
+	plan_spectrum = fftw_plan_dft_1d(MAX_BINS, fft_in, fft_spectrum, FFTW_FORWARD, FFTW_MEASURE);
 
 	// zero up the previous 'M' bins
-	for (int i= 0; i < MAX_BINS/2; i++){
-		__real__ fft_m[i]  = 0.0;
-		__imag__ fft_m[i]  = 0.0;
-	}
+	for (int i= 0; i < MAX_BINS/2; i++)
+        fft_m[i] = (fftw_complex) 0;
+		//__real__ fft_m[i] = __imag__ fft_m[i] = 0.0;
+
 
 	make_hann_window(spectrum_window, MAX_BINS);
 }
@@ -204,6 +208,7 @@ void spectrum_reset(){
 }
 
 #if 0
+// web only
 void spectrum_update(){
 	// we are only using the lower half of the bins, so this copies twice as many bins, 
 	// it can be optimized. leaving it here just in case someone wants to try I Q channels 
@@ -226,6 +231,7 @@ void spectrum_update(){
 	}
 }
 #endif
+
 
 int remote_audio_output(int16_t *samples){
 	int length = q_length(&qremote);
@@ -352,7 +358,7 @@ short is_ready = 0;
 void tx_init(int frequency, short mode, int bpf_low, int bpf_high){
 
 	// we assume that there are <rate> samples / sec, giving us a 48khz slice
-	// the tuning can go up and down only by 22 KHz from the center_freq
+	// the tuning can go up and down only by 22 KHz from the center freq
 
 	tx_filter = filter_new(1024, 1025);
 	filter_tune(tx_filter, (1.0 * bpf_low) / RX_SAMPLE_RATE, (1.0 * bpf_high) / RX_SAMPLE_RATE , 5);
@@ -369,9 +375,9 @@ struct rx *add_tx(int frequency, short mode, int bpf_low, int bpf_high){
 	r->tuned_bin = 512; 
 
 	// create fft complex arrays to convert the frequency back to time
-	r->fft_time = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
-	r->fft_freq = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
-	r->plan_rev = fftw_plan_dft_1d(MAX_BINS, r->fft_freq, r->fft_time, FFTW_BACKWARD, FFTW_ESTIMATE);
+    r->fft_time = fftw_alloc_complex(MAX_BINS);
+    r->fft_freq = fftw_alloc_complex(MAX_BINS);
+	r->plan_rev = fftw_plan_dft_1d(MAX_BINS, r->fft_freq, r->fft_time, FFTW_BACKWARD, FFTW_MEASURE);
 
 	r->output = 0;
 	r->next = NULL;
@@ -393,8 +399,8 @@ struct rx *add_tx(int frequency, short mode, int bpf_low, int bpf_high){
 	// the modems drive the tx at 12000 Hz, this has to be upconverted
 	// to the radio's sampling rate
 
-  r->next = tx_list;
-  tx_list = r;
+    r->next = tx_list;
+    tx_list = r;
 }
 
 struct rx *add_rx(int frequency, short mode, int bpf_low, int bpf_high){
@@ -409,9 +415,9 @@ struct rx *add_rx(int frequency, short mode, int bpf_low, int bpf_high){
 	r->agc_gain = 0.0;
 
 	//create fft complex arrays to convert the frequency back to time
-	r->fft_time = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
-	r->fft_freq = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * MAX_BINS);
-	r->plan_rev = fftw_plan_dft_1d(MAX_BINS, r->fft_freq, r->fft_time, FFTW_BACKWARD, FFTW_ESTIMATE);
+    r->fft_time = fftw_alloc_complex(MAX_BINS);
+    r->fft_freq = fftw_alloc_complex(MAX_BINS);
+	r->plan_rev = fftw_plan_dft_1d(MAX_BINS, r->fft_freq, r->fft_time, FFTW_BACKWARD, FFTW_MEASURE);
 
 	r->output = 0;
 	r->next = NULL;
@@ -437,7 +443,6 @@ struct rx *add_rx(int frequency, short mode, int bpf_low, int bpf_high){
 
 	r->next = rx_list;
 	rx_list = r;
-
 }
 
 
@@ -571,7 +576,7 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 		fft_in[i] = fft_m[i];
 
 	//STEP 2: then add the new set of samples
-	// m is the index into incoming samples, starting at zero
+	// j is the index into incoming samples, starting at zero
 	// i is the index into the time samples, picking from 
 	// the samples added in the previous step
 	// gather the samples into a time domain array 
@@ -580,7 +585,7 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 		__imag__ fft_in[i] = __imag__ fft_m[j] = 0.0;
 	}
 
-	// STEP 3: convert the time domain samples to  frequency domain
+	//STEP 3: convert the time domain samples to  frequency domain
 	my_fftw_execute(plan_fwd);
 
 	//STEP 3B: this is a side line, we use these frequency domain
@@ -605,15 +610,12 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	// at present, we handle just the first receiver
 	struct rx *r = rx_list;
 	
-	//STEP 4: we rotate the bins around by r-tuned_bin
-    // for (i = 0; i < MAX_BINS; i++)
-    //     r->fft_freq[i] = fft_out[(i + r->tuned_bin) % MAX_BINS];
+	//STEP 4: we rotate the bins around by r->tuned_bin and apply filter
+    for (int i=0, b=r->tuned_bin; b<MAX_BINS; i++, b++)
+        r->fft_freq[i] = fft_out[b] * r->filter->fir_coeff[i];    
 
-	for (int i=0, b=r->tuned_bin; i<MAX_BINS; i++, b++){
-		if (b >= MAX_BINS)
-			b -= MAX_BINS;
-		r->fft_freq[i] = fft_out[b] * r->filter->fir_coeff[i];
-	}
+    for (int i=MAX_BINS-r->tuned_bin, b=0; i<MAX_BINS; i++, b++)
+        r->fft_freq[i] = fft_out[b] * r->filter->fir_coeff[i];    
 
     // STEP 5: zero out the other sideband - not needed, handled by filter
     // STEP 6: apply the filter - not needed, done in rotate step
@@ -626,19 +628,15 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	
 	//STEP 9: send the output back to where it needs to go
 	int is_digital = 0;
-
 	if (rx_list->output == 0){
-		for (int i=0; i<MAX_BINS/2; i++){
-			int32_t sample;
-			sample = cimag(r->fft_time[i+(MAX_BINS/2)]);
-			//keep transmit buffer empty
-			output_speaker[i] = sample;
+		for (int i=0, j=MAX_BINS/2; j<MAX_BINS; i++, j++){
+			output_speaker[i] = (int) __imag__ r->fft_time[j];
 			output_tx[i] = 0;
 		}
 
 		//push the samples to the remote audio queue, decimated to 16000 samples/sec
-		for (int i=0; i<MAX_BINS/2; i+=6)
-			q_write(&qremote, output_speaker[i]);
+		//for (int i=0; i<MAX_BINS/2; i+=6)
+		//	q_write(&qremote, output_speaker[i]);
 
 	}
 
