@@ -84,12 +84,14 @@ int window_filter(int const L, int const M, complex float * const response, floa
     int const N = L + M - 1;
 
     // fftw_plan can overwrite its buffers, so we're forced to make a temp. Ugh.
-    complex float * const buffer = fftwf_alloc_complex(N);
-    fftwf_plan fwd_filter_plan = fftwf_plan_dft_1d(N,buffer,buffer,FFTW_FORWARD,FFTW_ESTIMATE);
-    fftwf_plan rev_filter_plan = fftwf_plan_dft_1d(N,buffer,buffer,FFTW_BACKWARD,FFTW_ESTIMATE);
+    // complex float * const buffer = fftwf_alloc_complex(N);
+    // fftwf_plan fwd_filter_plan = fftwf_plan_dft_1d(N,buffer,buffer,FFTW_FORWARD,FFTW_ESTIMATE);
+    // fftwf_plan rev_filter_plan = fftwf_plan_dft_1d(N,buffer,buffer,FFTW_BACKWARD,FFTW_ESTIMATE);
+    fftwf_plan fwd_filter_plan = fftwf_plan_dft_1d(N,response,response,FFTW_FORWARD,FFTW_ESTIMATE);
+    fftwf_plan rev_filter_plan = fftwf_plan_dft_1d(N,response,response,FFTW_BACKWARD,FFTW_ESTIMATE);
 
     // Convert to time domain
-    memcpy(buffer,response,N*sizeof(*buffer));
+    // memcpy(buffer,response,N*sizeof(*buffer));
     fftwf_execute(rev_filter_plan);
     fftwf_destroy_plan(rev_filter_plan);
 
@@ -111,7 +113,8 @@ int window_filter(int const L, int const M, complex float * const response, floa
 
 	//shift the buffer to make it causal
     for(int n = M - 1; n >= 0; n--)
-        buffer[n] = buffer[(n-M/2+N) % N];
+        // buffer[n] = buffer[(n-M/2+N) % N];
+        response[n] = response[(n-M/2+N) % N];
 
     #if 0
     printf("#Filter time impulse response, shifted\n");
@@ -121,7 +124,8 @@ int window_filter(int const L, int const M, complex float * const response, floa
 
     // apply window and gain
     for(int n = M - 1; n >= 0; n--)
-        buffer[n] = buffer[n] * kaiser_window[n] * gain;
+        // buffer[n] = buffer[n] * kaiser_window[n] * gain;
+        response[n] = response[n] * kaiser_window[n] * gain;
     #if 0
     printf("#Filter time impulse response, windowed and gain adjusted\n");
     for(int n=0;n< N;n++)
@@ -129,7 +133,7 @@ int window_filter(int const L, int const M, complex float * const response, floa
     #endif
 	
     // Pad with zeroes on right side
-    memset(buffer+M,0,(N-M)*sizeof(*buffer));
+    memset(response+M,0,(N-M)*sizeof(*response));
 
     #if 0 
     printf("# Filter time impulse response  zero padded\n");
@@ -148,7 +152,7 @@ int window_filter(int const L, int const M, complex float * const response, floa
     }
     printf("\n");
     #endif
-    memcpy(response,buffer,N*sizeof(*response));
+    // memcpy(response,buffer,N*sizeof(*response));
 
     #if 0 
     printf("#Filter windowed FIR frequency coefficients\n");
@@ -157,7 +161,7 @@ int window_filter(int const L, int const M, complex float * const response, floa
     }
     #endif
 
-    fftwf_free(buffer);
+    // fftwf_free(buffer);
     return 0;
 }
 
