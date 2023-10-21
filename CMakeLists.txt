@@ -26,7 +26,7 @@ target_link_libraries(sBitx
   wiringPi
   asound
   m
-  fftw3
+  fftw3f
   ncurses
   libft8
   sqlite3

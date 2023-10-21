@@ -91,7 +91,7 @@ for the transmission. The data required is the same!
 
 extern float fft_bins[];
 // extern int spectrum_plot[];
-extern fftw_complex *fft_spectrum;
+extern fftwf_complex *fft_spectrum;
 extern struct filter *ssb;
 
 // vfo definitions
@@ -110,13 +110,13 @@ int vfo_read(struct vfo *v);
 
 // the filter definitions
 struct filter {
-	fftw_complex *fir_coeff;
+	fftwf_complex *fir_coeff;
 	// complex float *overlap;
 	int N;
 	int L;
 	int M;
-    fftw_plan fwd;
-    fftw_plan rev;
+    fftwf_plan fwd;
+    fftwf_plan rev;
 };
 
 struct filter *filter_new(int input_length, int impulse_length);
@@ -158,9 +158,9 @@ struct rx {
 					// FFT plan to convert back to time domain
 	int low_hz; 
 	int high_hz;
-	fftw_plan plan_rev;
-	fftw_complex *fft_freq;
-	fftw_complex *fft_time;
+	fftwf_plan plan_rev;
+	fftwf_complex *fft_freq;
+	fftwf_complex *fft_time;
 
 	/*
 	* agc() is called once for every block of samples. The samples

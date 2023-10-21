@@ -53,14 +53,14 @@ float spectrum_window[MAX_BINS];
 void set_rx1(int frequency);
 void tr_switch(int tx_on);
 
-static fftw_complex *fft_out;	// holds the incoming samples in freq domain (for rx as well as tx)
-static fftw_complex *fft_in;	// holds the incoming samples in time domain (for rx as well as tx) 
-static double *fft_in_r;
-static fftw_complex *fft_m;     // holds previous samples for overlap and discard convolution 
-static double *fft_m_r;         // holds previous samples for overlap and discard convolution 
-fftw_complex *fft_spectrum;
-// fftw_plan plan_spectrum;
-fftw_plan plan_spectrum_r, plan_fwd, plan_fwd_r;
+static fftwf_complex *fft_out;	// holds the incoming samples in freq domain (for rx as well as tx)
+static fftwf_complex *fft_in;	// holds the incoming samples in time domain (for rx as well as tx) 
+static float *fft_in_r;
+static fftwf_complex *fft_m;     // holds previous samples for overlap and discard convolution 
+static float *fft_m_r;         // holds previous samples for overlap and discard convolution 
+fftwf_complex *fft_spectrum;
+// fftwf_plan plan_spectrum;
+fftwf_plan plan_spectrum_r, plan_fwd, plan_fwd_r;
 int bfo_freq = 40035000;
 int freq_hdr = -1;
 
@@ -138,35 +138,35 @@ void radio_tune_to(uint32_t f){
 void fft_init(){
 	fflush(stdout);
 
-	fft_m = fftw_alloc_complex(MAX_BINS / 2);
-    fft_m_r = fftw_alloc_real(MAX_BINS / 2);
-	fft_in = fftw_alloc_complex(MAX_BINS);
-    fft_in_r = fftw_alloc_real(MAX_BINS);
-	fft_out = fftw_alloc_complex(MAX_BINS);
-	fft_spectrum = fftw_alloc_complex(MAX_BINS);
+	fft_m = fftwf_alloc_complex(MAX_BINS / 2);
+    fft_m_r = fftwf_alloc_real(MAX_BINS / 2);
+	fft_in = fftwf_alloc_complex(MAX_BINS);
+    fft_in_r = fftwf_alloc_real(MAX_BINS);
+	fft_out = fftwf_alloc_complex(MAX_BINS);
+	fft_spectrum = fftwf_alloc_complex(MAX_BINS);
 
-	plan_fwd = fftw_plan_dft_1d(MAX_BINS, fft_in, fft_out, FFTW_FORWARD, FFTW_MEASURE);
-	plan_fwd_r = fftw_plan_dft_r2c_1d(MAX_BINS, fft_in_r, fft_out, FFTW_MEASURE);
-	// plan_spectrum = fftw_plan_dft_1d(MAX_BINS, fft_in, fft_spectrum, FFTW_FORWARD, FFTW_MEASURE);
-	plan_spectrum_r = fftw_plan_dft_r2c_1d(MAX_BINS, fft_in_r, fft_spectrum, FFTW_MEASURE);
+	plan_fwd = fftwf_plan_dft_1d(MAX_BINS, fft_in, fft_out, FFTW_FORWARD, FFTW_MEASURE);
+	plan_fwd_r = fftwf_plan_dft_r2c_1d(MAX_BINS, fft_in_r, fft_out, FFTW_MEASURE);
+	// plan_spectrum = fftwf_plan_dft_1d(MAX_BINS, fft_in, fft_spectrum, FFTW_FORWARD, FFTW_MEASURE);
+	plan_spectrum_r = fftwf_plan_dft_r2c_1d(MAX_BINS, fft_in_r, fft_spectrum, FFTW_MEASURE);
 
 	// zero up the previous 'M' bins
-	memset(fft_m, 0, sizeof(fftw_complex) * MAX_BINS / 2);
-	memset(fft_m_r, 0, sizeof(double) * MAX_BINS / 2);
+	memset(fft_m, 0, sizeof(fftwf_complex) * MAX_BINS / 2);
+	memset(fft_m_r, 0, sizeof(float) * MAX_BINS / 2);
 
 	make_hann_window(spectrum_window, MAX_BINS);
 }
 
 static void fft_reset_m_bins(void){
 	// zero up the previous 'M' bins
-	memset(fft_m, 0, sizeof(fftw_complex) * MAX_BINS / 2);
-	memset(fft_m_r, 0, sizeof(double) * MAX_BINS / 2);
+	memset(fft_m, 0, sizeof(fftwf_complex) * MAX_BINS / 2);
+	memset(fft_m_r, 0, sizeof(float) * MAX_BINS / 2);
 
-	memset(fft_in, 0, sizeof(fftw_complex) * MAX_BINS);
-	memset(fft_out, 0, sizeof(fftw_complex) * MAX_BINS);
-	memset(fft_spectrum, 0, sizeof(fftw_complex) * MAX_BINS);
-	memset(tx_list->fft_time, 0, sizeof(fftw_complex) * MAX_BINS);
-	memset(tx_list->fft_freq, 0, sizeof(fftw_complex) * MAX_BINS);
+	memset(fft_in, 0, sizeof(fftwf_complex) * MAX_BINS);
+	memset(fft_out, 0, sizeof(fftwf_complex) * MAX_BINS);
+	memset(fft_spectrum, 0, sizeof(fftwf_complex) * MAX_BINS);
+	memset(tx_list->fft_time, 0, sizeof(fftwf_complex) * MAX_BINS);
+	memset(tx_list->fft_freq, 0, sizeof(fftwf_complex) * MAX_BINS);
 }
 
 int mag2db(double mag){
@@ -363,9 +363,9 @@ struct rx *add_tx(int frequency, short mode, int bpf_low, int bpf_high){
 	r->tuned_bin = 512; 
 
 	// create fft complex arrays to convert the frequency back to time
-    r->fft_time = fftw_alloc_complex(MAX_BINS);
-    r->fft_freq = fftw_alloc_complex(MAX_BINS);
-	r->plan_rev = fftw_plan_dft_1d(MAX_BINS, r->fft_freq, r->fft_time, FFTW_BACKWARD, FFTW_MEASURE);
+    r->fft_time = fftwf_alloc_complex(MAX_BINS);
+    r->fft_freq = fftwf_alloc_complex(MAX_BINS);
+	r->plan_rev = fftwf_plan_dft_1d(MAX_BINS, r->fft_freq, r->fft_time, FFTW_BACKWARD, FFTW_MEASURE);
 
 	r->output = 0;
 	r->next = NULL;
@@ -403,9 +403,9 @@ struct rx *add_rx(int frequency, short mode, int bpf_low, int bpf_high){
 	r->agc_gain = 0.0;
 
 	//create fft complex arrays to convert the frequency back to time
-    r->fft_time = fftw_alloc_complex(MAX_BINS);
-    r->fft_freq = fftw_alloc_complex(MAX_BINS);
-	r->plan_rev = fftw_plan_dft_1d(MAX_BINS, r->fft_freq, r->fft_time, FFTW_BACKWARD, FFTW_MEASURE);
+    r->fft_time = fftwf_alloc_complex(MAX_BINS);
+    r->fft_freq = fftwf_alloc_complex(MAX_BINS);
+	r->plan_rev = fftwf_plan_dft_1d(MAX_BINS, r->fft_freq, r->fft_time, FFTW_BACKWARD, FFTW_MEASURE);
 
 	r->output = 0;
 	r->next = NULL;
@@ -550,8 +550,8 @@ double tgc(struct rx *r){
 }
 */
 
-void my_fftw_execute(fftw_plan f){
-	fftw_execute(f);
+void my_fftwf_execute(fftwf_plan f){
+	fftwf_execute(f);
 }
 
 
@@ -572,7 +572,7 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
         fft_in_r[i] = fft_m_r[j] = input_rx[j] * 5e-09;
 
 	//STEP 3: convert the time domain samples to  frequency domain
-	my_fftw_execute(plan_fwd_r);
+	my_fftwf_execute(plan_fwd_r);
 
 	//STEP 3B: this is a side line, we use these frequency domain
 	// values to paint the spectrum in the user interface
@@ -585,7 +585,7 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	for (int i=0; i<MAX_BINS; i++)
 	    fft_in_r[i] *= spectrum_window[i];
 
-	my_fftw_execute(plan_spectrum_r);
+	my_fftwf_execute(plan_spectrum_r);
     // populate the extra elements
     // out[i] is the conjugate of out[n-i]
     for (int i=MAX_BINS/2+2, j=MAX_BINS-i; i<MAX_BINS; i++, j--) {
@@ -617,7 +617,7 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
     // STEP 6: apply the filter - not needed, done in rotate step
 
 	//STEP 7: convert back to time domain	
-	my_fftw_execute(r->plan_rev);
+	my_fftwf_execute(r->plan_rev);
 
 	//STEP 8 : AGC
 	agc2(r);
@@ -764,7 +764,7 @@ void tx_process(
 		q_write(&qremote, output_speaker[i]);
 
 	// convert to frequency
-	fftw_execute(plan_fwd);
+	fftwf_execute(plan_fwd);
 
 	// NOTE: fft_out holds the fft output (in freq domain) of the 
 	// incoming mic samples 
@@ -807,7 +807,7 @@ void tx_process(
 	// spectrum_update();
 
 	// convert back to time domain	
-	fftw_execute(r->plan_rev);
+	fftwf_execute(r->plan_rev);
 
 	float scale = volume;
 	for (i= 0; i < MAX_BINS/2; i++){
