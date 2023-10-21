@@ -560,7 +560,6 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 {
 	//STEP 1: first add the previous M samples to
 	for (int i=0; i<MAX_BINS/2; i++)
-		// fft_in[i] = fft_m[i];
         fft_in_r[i] = fft_m_r[i];
 
 	//STEP 2: then add the new set of samples
@@ -568,19 +567,11 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	// i is the index into the time samples, picking from 
 	// the samples added in the previous step
 	// gather the samples into a time domain array 
-	for (int i=MAX_BINS/2, j=0; i < MAX_BINS; i++, j++){
-		// __real__ fft_in[i] = __real__ fft_m[j] = input_rx[j] * 5e-09;
-		// __imag__ fft_in[i] = __imag__ fft_m[j] = 0.0;
+	for (int i=MAX_BINS/2, j=0; i < MAX_BINS; i++, j++)
         fft_in_r[i] = fft_m_r[j] = input_rx[j] * 5e-09;
-	}
 
 	//STEP 3: convert the time domain samples to  frequency domain
-	// my_fftw_execute(plan_fwd);
 	my_fftw_execute(plan_fwd_r);
-    for (int i=MAX_BINS / 2 + 2; i<MAX_BINS; i++) {
-        __real__ fft_out[i] = __real__ fft_out[MAX_BINS - i];
-        __imag__ fft_out[i] = - __imag__ fft_out[MAX_BINS - i];
-    }
 
 	//STEP 3B: this is a side line, we use these frequency domain
 	// values to paint the spectrum in the user interface
@@ -591,13 +582,17 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	// signal processing. If you are not showing the spectrum or the
 	// waterfall, you can skip these steps
 	for (int i=0; i<MAX_BINS; i++)
-	    // __real__ fft_in[i] *= spectrum_window[i];
 	    fft_in_r[i] *= spectrum_window[i];
-	// my_fftw_execute(plan_spectrum);
+
 	my_fftw_execute(plan_spectrum_r);
-    for (int i=MAX_BINS / 2 + 2; i<MAX_BINS; i++) {
-        __real__ fft_spectrum[i] = __real__ fft_spectrum[MAX_BINS - i];
-        __imag__ fft_spectrum[i] = - __imag__ fft_spectrum[MAX_BINS - i];
+    // populate the extra elements
+    // out[i] is the conjugate of out[n-i]
+    for (int i=MAX_BINS/2+2, j=MAX_BINS-i; i<MAX_BINS; i++, j--) {
+        __real__ fft_out[i] = __real__ fft_out[j];
+        __imag__ fft_out[i] = - __imag__ fft_out[j];
+
+        __real__ fft_spectrum[i] = __real__ fft_spectrum[j];
+        __imag__ fft_spectrum[i] = - __imag__ fft_spectrum[j];
     }
 
 	// the spectrum display is updated - not needed, called elsewhere
