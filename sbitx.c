@@ -49,16 +49,15 @@ int sbitx_version = SBITX_V2;
 int fwdpower, vswr;
 float fft_bins[MAX_BINS]; // spectrum amplitudes  
 // int spectrum_plot[MAX_BINS];
-fftw_complex *fft_spectrum;
-fftw_plan plan_spectrum;
 float spectrum_window[MAX_BINS];
 void set_rx1(int frequency);
 void tr_switch(int tx_on);
 
 static fftw_complex *fft_out;	// holds the incoming samples in freq domain (for rx as well as tx)
 static fftw_complex *fft_in;	// holds the incoming samples in time domain (for rx as well as tx) 
-static fftw_complex *fft_m;	// holds previous samples for overlap and discard convolution 
-fftw_plan plan_fwd;
+static fftw_complex *fft_m;     // holds previous samples for overlap and discard convolution 
+fftw_complex *fft_spectrum;
+fftw_plan plan_spectrum, plan_fwd;
 int bfo_freq = 40035000;
 int freq_hdr = -1;
 
@@ -570,7 +569,7 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	//STEP 3B: this is a side line, we use these frequency domain
 	// values to paint the spectrum in the user interface
 	// I discovered that the raw time samples give horrible spectrum
-	// and they need to be multiplied wiht a window function 
+	// and they need to be multiplied with a window function 
 	// they use a separate fft plan
 	// NOTE: the spectrum update has nothing to do with the actual
 	// signal processing. If you are not showing the spectrum or the
