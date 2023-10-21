@@ -10,6 +10,9 @@
             "*.h": "c",
             "fields.h": "c",
             "typeinfo": "c"
+        },
+        "terminal.integrated.env.linux": {
+            "DISPLAY": ":0"
         }
     }
 }

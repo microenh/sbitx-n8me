@@ -244,6 +244,5 @@ void ft8_setmode(int config);
 void telnet_open(char *server);
 int telnet_write(char *text);
 void telnet_close();
-double agc2(struct rx *r);
 FILE *wav_start_writing(const char* path);
 

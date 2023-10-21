@@ -437,7 +437,8 @@ struct rx *add_rx(int frequency, short mode, int bpf_low, int bpf_high){
 
 int count = 0;
 
-double agc2(struct rx *r){
+#if 0
+static double agc2(struct rx *r){
 	int i;
 	double signal_strength, agc_gain_should_be;
 
@@ -451,7 +452,7 @@ double agc2(struct rx *r){
 	// find the peak signal amplitude
 	signal_strength = 0.0;
 	for (i=0; i < MAX_BINS/2; i++){
-		double s = cimag(r->fft_time[i+(MAX_BINS/2)]) * 1000;
+		double s = __imag__ r->fft_time[i+(MAX_BINS/2)] * 1000;
 		if (signal_strength < s) 
 			signal_strength = s;
 	}
@@ -489,6 +490,67 @@ double agc2(struct rx *r){
 	} else 
   		for (i = 0; i < MAX_BINS/2; i++)
 	  		__imag__ (r->fft_time[i+(MAX_BINS/2)]) *= r->agc_gain;
+
+	// printf("\n");
+	r->agc_loop--;
+
+	// printf("%d:s meter: %d %d %d \n", count++, (int)r->agc_gain, (int)r->signal_strength, r->agc_loop);
+	return 100000000000 / r->agc_gain;  
+}
+#endif
+
+static double agc2(struct rx *r){
+	int i;
+	double signal_strength, agc_gain_should_be;
+
+	// do nothing if agc is off
+	if (r->agc_speed == -1){
+		for (i=0; i < MAX_BINS/2; i++)
+			__real__ (r->fft_time[i+(MAX_BINS/2)]) *=10000000;
+    	return 10000000;
+	}
+
+	// find the peak signal amplitude
+	signal_strength = 0.0;
+	for (i=0; i < MAX_BINS/2; i++){
+		double s = __real__ r->fft_time[i+(MAX_BINS/2)] * 1000;
+		if (signal_strength < s) 
+			signal_strength = s;
+	}
+	// also calculate the moving average of the signal strength
+	r->signal_avg = (r->signal_avg * 0.93) + (signal_strength * 0.07);
+	if (signal_strength == 0)
+		agc_gain_should_be = 10000000;
+	else
+		agc_gain_should_be = 100000000000/signal_strength;
+	r->signal_strength = signal_strength;
+	// printf("Agc temp, g:%g, s:%g, f:%g ", r->agc_gain, signal_strength, agc_gain_should_be);
+
+	double agc_ramp = 0.0;
+
+	// climb up the agc quickly if the signal is louder than before 
+	if (agc_gain_should_be < r->agc_gain){
+		r->agc_gain = agc_gain_should_be;
+		// reset the agc to hang count down 
+    	r->agc_loop = r->agc_speed;
+		// printf("attack %g %d ", r->agc_gain, r->agc_loop);
+	} else if (r->agc_loop <= 0){
+		agc_ramp = (agc_gain_should_be - r->agc_gain) / (MAX_BINS/2);	
+		// printf("release %g %d ",  r->agc_gain, r->agc_loop);
+	}
+	// else if (r->agc_loop > 0)
+	//  	printf("hanging %g %d ", r->agc_gain, r->agc_loop);
+ 
+	if (agc_ramp != 0){
+		// printf("Ramping from %g ", r->agc_gain);
+  		for (i = 0; i < MAX_BINS/2; i++){
+	  		__real__ (r->fft_time[i+(MAX_BINS/2)]) *= r->agc_gain;
+		}
+		r->agc_gain += agc_ramp;		
+		// printf("by %g to %g ", agc_ramp, r->agc_gain);
+	} else 
+  		for (i = 0; i < MAX_BINS/2; i++)
+	  		__real__ (r->fft_time[i+(MAX_BINS/2)]) *= r->agc_gain;
 
 	// printf("\n");
 	r->agc_loop--;
@@ -550,11 +612,6 @@ double tgc(struct rx *r){
 }
 */
 
-void my_fftwf_execute(fftwf_plan f){
-	fftwf_execute(f);
-}
-
-
 //TODO : optimize the memory copy and moves to use the memcpy
 void rx_process(int32_t *input_rx,  int32_t *input_mic, 
 	int32_t *output_speaker, int32_t *output_tx, int n_samples)
@@ -572,7 +629,7 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
         fft_in_r[i] = fft_m_r[j] = input_rx[j] * 5e-09;
 
 	//STEP 3: convert the time domain samples to  frequency domain
-	my_fftwf_execute(plan_fwd_r);
+	fftwf_execute(plan_fwd_r);
 
 	//STEP 3B: this is a side line, we use these frequency domain
 	// values to paint the spectrum in the user interface
@@ -585,7 +642,7 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	for (int i=0; i<MAX_BINS; i++)
 	    fft_in_r[i] *= spectrum_window[i];
 
-	my_fftwf_execute(plan_spectrum_r);
+	fftwf_execute(plan_spectrum_r);
     // populate the extra elements
     // out[i] is the conjugate of out[n-i]
     for (int i=MAX_BINS/2+2, j=MAX_BINS-i; i<MAX_BINS; i++, j--) {
@@ -617,7 +674,7 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
     // STEP 6: apply the filter - not needed, done in rotate step
 
 	//STEP 7: convert back to time domain	
-	my_fftwf_execute(r->plan_rev);
+    fftwf_execute(r->plan_rev);
 
 	//STEP 8 : AGC
 	agc2(r);
@@ -626,7 +683,7 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	int is_digital = 0;
 	if (rx_list->output == 0){
 		for (int i=0, j=MAX_BINS/2; j<MAX_BINS; i++, j++){
-			output_speaker[i] = (int) __imag__ r->fft_time[j];
+			output_speaker[i] = (int) __real__ r->fft_time[j];
 			output_tx[i] = 0;
 		}
 
@@ -855,11 +912,16 @@ void set_rx_filter() {
 			5);
     }
     #if 0
+    FILE *out;
+    out = fopen("/home/pi/data.txt", "w");
     complex float *fir = rx_list->filter->fir_coeff;
     for (int i = 0; i < MAX_BINS; i++, fir++) {
-        if (cabs(*fir) > 0.01)
-            printf("%3d: %5.2f + %5.2fi\r\n", i, creal(*fir), cimag(*fir));
+        // if (cabs(*fir) > 0.01)
+            // fprintf(out, "%4d: %5.2f + %5.2fi\r\n", i, creal(*fir), cimag(*fir));
+            fprintf(out, "%d, %f, %f\r\n", i, __real__ *fir, __imag__ *fir);
     }
+    fclose(out);
+    printf("Saved filter to file.\r\n");
     #endif
 }
 
