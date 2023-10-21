@@ -47,7 +47,7 @@ FILE *pf_debug = NULL;
 
 int sbitx_version = SBITX_V2;
 int fwdpower, vswr;
-float fft_bins[MAX_BINS]; // spectrum amplitudes  
+// float fft_bins[MAX_BINS]; // spectrum amplitudes  
 // int spectrum_plot[MAX_BINS];
 float spectrum_window[MAX_BINS];
 void set_rx1(int frequency);
@@ -183,6 +183,9 @@ int mag2db(double mag){
 	return c;
 }
 
+#if 0
+// web only
+
 void set_spectrum_speed(int speed){
 	spectrum_speed = speed;
 	for (int i = 0; i < MAX_BINS; i++)
@@ -194,8 +197,6 @@ void spectrum_reset(void){
 		fft_bins[i] = 0;
 }
 
-#if 0
-// web only
 void spectrum_update(){
 	// we are only using the lower half of the bins, so this copies twice as many bins, 
 	// it can be optimized. leaving it here just in case someone wants to try I Q channels 
@@ -1079,7 +1080,7 @@ void tr_switch_de(int tx_on){
 			delay(10); //debounce the lpf relays
 		}
 		digitalWrite(TX_POWER, HIGH);
-		spectrum_reset();
+		// spectrum_reset();
 	} else {
 		in_tx = 0;
 		// mute it all and hang on
@@ -1107,7 +1108,7 @@ void tr_switch_de(int tx_on){
 		// audio codec is back on
 		sound_mixer(audio_card, "Master", rx_vol);
 		sound_mixer(audio_card, "Capture", rx_gain);
-		spectrum_reset();
+		// spectrum_reset();
 		// rx_tx_ramp = 10;
 	}
 }
@@ -1139,7 +1140,7 @@ void tr_switch_v2(int tx_on){
 		prev_lpf = -1; // force this
 		set_lpf_40mhz(freq_hdr);
 		delay(10);
-		spectrum_reset();
+		// spectrum_reset();
 	} else {
 		in_tx = 0;
 		// mute it all and hang on
@@ -1161,7 +1162,7 @@ void tr_switch_v2(int tx_on){
 		// audio codec is back on
 		sound_mixer(audio_card, "Master", rx_vol);
 		sound_mixer(audio_card, "Capture", rx_gain);
-		spectrum_reset();
+		// spectrum_reset();
 		prev_lpf = -1;
 		set_lpf_40mhz(freq_hdr);
 		// rx_tx_ramp = 10;

@@ -110,13 +110,13 @@ int vfo_read(struct vfo *v);
 
 // the filter definitions
 struct filter {
-	complex float *fir_coeff;
+	fftw_complex *fir_coeff;
 	// complex float *overlap;
 	int N;
 	int L;
 	int M;
-    fftwf_plan fwd;
-    fftwf_plan rev;
+    fftw_plan fwd;
+    fftw_plan rev;
 };
 
 struct filter *filter_new(int input_length, int impulse_length);

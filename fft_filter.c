@@ -80,7 +80,7 @@ int make_hann_window(float *window, int max_count){
 // Phase is adjusted so "time zero" (center of impulse response) is at M/2
 // L and M refer to the decimated output
 int window_filter(struct filter *f, float const beta){
-    fftwf_execute(f->rev);
+    fftw_execute(f->rev);
 
     float kaiser_window[f->M];
     make_kaiser(kaiser_window, f->M, beta);
@@ -96,7 +96,7 @@ int window_filter(struct filter *f, float const beta){
     memset(f->fir_coeff+f->M, 0, (f->N-f->M) * sizeof(*f->fir_coeff));
 
     // Now back to frequency domain
-    fftwf_execute(f->fwd);
+    fftw_execute(f->fwd);
 
     return 0;
 }
@@ -107,10 +107,10 @@ struct filter *filter_new(int input_length, int impulse_length){
 	f->L = input_length;
 	f->M = impulse_length;
     f->N = f->L + f->M - 1;
-    f->fir_coeff = fftwf_alloc_complex(f->N);
+    f->fir_coeff = fftw_alloc_complex(f->N);
 
-    f->fwd = fftwf_plan_dft_1d(f->N, f->fir_coeff, f->fir_coeff, FFTW_FORWARD, FFTW_MEASURE);
-    f->rev = fftwf_plan_dft_1d(f->N, f->fir_coeff, f->fir_coeff, FFTW_BACKWARD, FFTW_MEASURE);
+    f->fwd = fftw_plan_dft_1d(f->N, f->fir_coeff, f->fir_coeff, FFTW_FORWARD, FFTW_MEASURE);
+    f->rev = fftw_plan_dft_1d(f->N, f->fir_coeff, f->fir_coeff, FFTW_BACKWARD, FFTW_MEASURE);
 
 	return f;
 }

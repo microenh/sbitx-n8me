@@ -27,7 +27,6 @@ target_link_libraries(sBitx
   asound
   m
   fftw3
-  fftw3f
   ncurses
   libft8
   sqlite3
