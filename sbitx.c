@@ -467,7 +467,7 @@ static double agc2(struct rx *r){
 	// find the peak signal amplitude
 	signal_strength = 0.0;
 	for (i=0; i < MAX_BINS/2; i++){
-		double s = r->fft_time[i+(MAX_BINS/2)] * 1000.0;
+		double s = __real__ r->fft_time[i+(MAX_BINS/2)] * 1000.0;
 		if (signal_strength < s) 
 			signal_strength = s;
 	}
