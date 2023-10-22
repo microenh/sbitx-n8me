@@ -2365,7 +2365,7 @@ static void ui_init(int argc, char *argv[]){
 	// gtk_window_set_default_size(GTK_WINDOW(window), 800, 480);
 	gtk_window_set_default_size(GTK_WINDOW(window), screen_width, screen_height);
 	#ifdef N8ME
-	gtk_window_move(GTK_WINDOW(window), 0, 0);
+	// gtk_window_move(GTK_WINDOW(window), 0, 0);
 	gtk_window_set_title(GTK_WINDOW(window), "sBITX-N8ME" );
 	#else
 	gtk_window_set_title(GTK_WINDOW(window), "sBITX" );
