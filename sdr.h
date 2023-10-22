@@ -4,6 +4,8 @@
 #include <fftw3.h>
 #include <stdint.h>
 
+// #define C2R
+
 /*
 Overview:
 The SDR's core is quite simple:
@@ -160,7 +162,11 @@ struct rx {
 	int high_hz;
 	fftwf_plan plan_rev;
 	fftwf_complex *fft_freq;
+    #ifdef C2R
+    float *fft_time;
+    #else
 	fftwf_complex *fft_time;
+    #endif
 
 	/*
 	* agc() is called once for every block of samples. The samples
