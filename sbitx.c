@@ -365,13 +365,8 @@ struct rx *add_tx(int frequency, short mode, int bpf_low, int bpf_high){
 
 	// create fft complex arrays to convert the frequency back to time
     r->fft_freq = fftwf_alloc_complex(MAX_BINS);
-    #ifdef C2R
     r->fft_time = fftwf_alloc_real(MAX_BINS);
 	r->plan_rev = fftwf_plan_dft_c2r_1d(MAX_BINS, r->fft_freq, r->fft_time, FFTW_MEASURE);
-    #else
-    r->fft_time = fftwf_alloc_complex(MAX_BINS);
-	r->plan_rev = fftwf_plan_dft_1d(MAX_BINS, r->fft_freq, r->fft_time, FFTW_BACKWARD, FFTW_MEASURE);
-    #endif
 
 	r->output = 0;
 	r->next = NULL;
@@ -410,13 +405,8 @@ struct rx *add_rx(int frequency, short mode, int bpf_low, int bpf_high){
 
 	//create fft complex arrays to convert the frequency back to time
     r->fft_freq = fftwf_alloc_complex(MAX_BINS);
-    #ifdef C2R
     r->fft_time = fftwf_alloc_real(MAX_BINS);
 	r->plan_rev = fftwf_plan_dft_c2r_1d(MAX_BINS, r->fft_freq, r->fft_time, FFTW_MEASURE);
-    #else
-    r->fft_time = fftwf_alloc_complex(MAX_BINS);
-	r->plan_rev = fftwf_plan_dft_1d(MAX_BINS, r->fft_freq, r->fft_time, FFTW_BACKWARD, FFTW_MEASURE);
-    #endif
 
 	r->output = 0;
 	r->next = NULL;
@@ -450,8 +440,6 @@ int count = 0;
 
 
 static double max_signal_strength = 0.0;
-
-#ifndef C2R
 
 static double agc2(struct rx *r){
 	int i;
@@ -518,73 +506,6 @@ static double agc2(struct rx *r){
 	// printf("%d:s meter: %d %d %d \n", count++, (int)r->agc_gain, (int)r->signal_strength, r->agc_loop);
 	return 100000000000.0 / r->agc_gain;  
 }
-#else
-static double agc2(struct rx *r){
-	int i;
-	double signal_strength, agc_gain_should_be;
-
-	// do nothing if agc is off
-	if (r->agc_speed == -1){
-		for (i=0; i < MAX_BINS/2; i++)
-			r->fft_time[i+(MAX_BINS/2)] *= 10000000.0;
-    	return 10000000.0;
-	}
-
-	// find the peak signal amplitude
-	signal_strength = 0.0;
-	for (i=0; i < MAX_BINS/2; i++){
-		double s = r->fft_time[i+(MAX_BINS/2)] * 1000.0;
-		if (signal_strength < s) 
-			signal_strength = s;
-	}
-
-    if (signal_strength > max_signal_strength) {
-        printf("signal_strength: %f\r\n", signal_strength);
-        max_signal_strength = signal_strength;
-    }
-
-	// also calculate the moving average of the signal strength
-	r->signal_avg = (r->signal_avg * 0.93) + (signal_strength * 0.07);
-	if (signal_strength == 0)
-		agc_gain_should_be = 10000000.0;
-	else
-		agc_gain_should_be = 100000000000.0 /signal_strength;
-	r->signal_strength = signal_strength;
-	// printf("Agc temp, g:%g, s:%g, f:%g ", r->agc_gain, signal_strength, agc_gain_should_be);
-
-	double agc_ramp = 0.0;
-
-	// climb up the agc quickly if the signal is louder than before 
-	if (agc_gain_should_be < r->agc_gain){
-		r->agc_gain = agc_gain_should_be;
-		// reset the agc to hang count down 
-    	r->agc_loop = r->agc_speed;
-		// printf("attack %g %d ", r->agc_gain, r->agc_loop);
-	} else if (r->agc_loop <= 0){
-		agc_ramp = (agc_gain_should_be - r->agc_gain) / (MAX_BINS/2);	
-		// printf("release %g %d ",  r->agc_gain, r->agc_loop);
-	}
-	// else if (r->agc_loop > 0)
-	//  	printf("hanging %g %d ", r->agc_gain, r->agc_loop);
- 
-	if (agc_ramp != 0){
-		// printf("Ramping from %g ", r->agc_gain);
-  		for (i = 0; i < MAX_BINS/2; i++){
-	  		r->fft_time[i+(MAX_BINS/2)] *= r->agc_gain;
-		}
-		r->agc_gain += agc_ramp;		
-		// printf("by %g to %g ", agc_ramp, r->agc_gain);
-	} else 
-  		for (i = 0; i < MAX_BINS/2; i++)
-	  		r->fft_time[i+(MAX_BINS/2)] *= r->agc_gain;
-
-	// printf("\n");
-	r->agc_loop--;
-
-	// printf("%d:s meter: %d %d %d \n", count++, (int)r->agc_gain, (int)r->signal_strength, r->agc_loop);
-	return 100000000000.0 / r->agc_gain;  
-}
-#endif 
 
 /*
 double tgc(struct rx *r){
@@ -703,11 +624,6 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	//STEP 7: convert back to time domain	
     fftwf_execute(r->plan_rev);
 
-    #ifdef C2R
-    for (int i=0; i<MAX_BINS; i++)
-        r->fft_time[i] *= 10.0;
-    #endif
-
 	//STEP 8 : AGC
 	agc2(r);
 	
@@ -715,11 +631,7 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	int is_digital = 0;
 	if (rx_list->output == 0){
 		for (int i=0, j=MAX_BINS/2; j<MAX_BINS; i++, j++){
-            #ifdef C2R
 			output_speaker[i] = (int) r->fft_time[j];
-            #else
-			output_speaker[i] = (int) __real__ r->fft_time[j];
-            #endif
 			output_tx[i] = 0;
 		}
 

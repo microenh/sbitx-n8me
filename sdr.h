@@ -4,8 +4,6 @@
 #include <fftw3.h>
 #include <stdint.h>
 
-// #define C2R
-
 /*
 Overview:
 The SDR's core is quite simple:
@@ -113,7 +111,6 @@ int vfo_read(struct vfo *v);
 // the filter definitions
 struct filter {
 	fftwf_complex *fir_coeff;
-	// complex float *overlap;
 	int N;
 	int L;
 	int M;
@@ -162,12 +159,8 @@ struct rx {
 	int high_hz;
 	fftwf_plan plan_rev;
 	fftwf_complex *fft_freq;
-    #ifdef C2R
     float *fft_time;
-    #else
-	fftwf_complex *fft_time;
-    #endif
-
+ 
 	/*
 	* agc() is called once for every block of samples. The samples
 	* are in time-domain. Consider each call to agc as a 'tick'.
