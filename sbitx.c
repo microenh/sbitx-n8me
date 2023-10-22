@@ -438,9 +438,6 @@ struct rx *add_rx(int frequency, short mode, int bpf_low, int bpf_high){
 
 int count = 0;
 
-
-static double max_signal_strength = 0.0;
-
 static double agc2(struct rx *r){
 	int i;
 	double signal_strength, agc_gain_should_be;
@@ -459,11 +456,6 @@ static double agc2(struct rx *r){
 		if (signal_strength < s) 
 			signal_strength = s;
 	}
-
-    if (signal_strength > max_signal_strength) {
-        printf("signal_strength: %f\r\n", signal_strength);
-        max_signal_strength = signal_strength;
-    }
 
 	// also calculate the moving average of the signal strength
 	r->signal_avg = (r->signal_avg * 0.93) + (signal_strength * 0.07);
