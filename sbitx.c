@@ -585,13 +585,13 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	fftwf_execute(plan_spectrum_r);
     // populate the extra elements
     // out[i] is the conjugate of out[n-i]
-    for (int i=MAX_BINS/2+2, j=MAX_BINS-i; i<MAX_BINS; i++, j--) {
-        __real__ fft_out[i] = __real__ fft_out[j];
-        __imag__ fft_out[i] = - __imag__ fft_out[j];
+    // for (int i=0, j=MAX_BINS-i; i<MAX_BINS/2; i++, j--) {
+    //     __real__ fft_out[j] = __real__ fft_out[i];
+    //     __imag__ fft_out[j] = - __imag__ fft_out[i];
 
-        __real__ fft_spectrum[i] = __real__ fft_spectrum[j];
-        __imag__ fft_spectrum[i] = - __imag__ fft_spectrum[j];
-    }
+    //     __real__ fft_spectrum[j] = __real__ fft_spectrum[i];
+    //     __imag__ fft_spectrum[j] = - __imag__ fft_spectrum[i];
+    // }
 
 	// the spectrum display is updated - not needed, called elsewhere
 	// spectrum_update();
@@ -599,7 +599,7 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	// ... back to the actual processing, after spectrum update  
 
 	// we may add another sub receiver within the pass band later,
-	// hence, the linkced list of receivers here
+	// hence, the linked list of receivers here
 	// at present, we handle just the first receiver
 	struct rx *r = rx_list;
 	
@@ -608,7 +608,17 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
         r->fft_freq[i] = fft_out[b] * r->filter->fir_coeff[i];    
 
     for (int i=MAX_BINS-r->tuned_bin, b=0; i<MAX_BINS; i++, b++)
-        r->fft_freq[i] = fft_out[b] * r->filter->fir_coeff[i];    
+        r->fft_freq[i] = fft_out[b] * r->filter->fir_coeff[i];
+
+    for (int i=1, j=MAX_BINS-i; i<MAX_BINS/2; i++, j--) {
+        __real__ r->fft_freq[i] += __real__ r->fft_freq[j];
+        __imag__ r->fft_freq[i] -= __imag__ r->fft_freq[j];
+
+        __real__ fft_spectrum[j] = __real__ fft_spectrum[i];
+        __imag__ fft_spectrum[j] = - __imag__ fft_spectrum[i];
+
+    }
+
 
     // STEP 5: zero out the other sideband - not needed, handled by filter
     // STEP 6: apply the filter - not needed, done in rotate step
