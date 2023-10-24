@@ -8,6 +8,7 @@
 #include <memory.h>
 #include <pthread.h>
 #include <stdlib.h>
+// #include <stdio.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
@@ -143,6 +144,14 @@ int filter_tune(struct filter *f, float const low, float const high, float const
     }
 
     window_filter(f, kaiser_beta);
+
+    // FILE *out;
+    // out = fopen("filter_data.csv","w");
+    // fprintf(out, "id,real,imag\r\n");
+    // for (int i=0; i<f->N; i++)
+    //     fprintf(out, "%d,%f,%f\r\n", i, __real__ f->fir_coeff[i], __imag__ f->fir_coeff[i]);
+    // fclose(out);
+
     return 0;
 }
 

@@ -445,17 +445,25 @@ static double agc2(struct rx *r){
 	// do nothing if agc is off
 	if (r->agc_speed == -1){
 		for (i=0; i < MAX_BINS/2; i++)
-			__real__ (r->fft_time[i+(MAX_BINS/2)]) *= 10000000.0;
+			/* __real__ */ (r->fft_time[i + (MAX_BINS/2)]) *= 10000000.0;
     	return 10000000.0;
 	}
 
 	// find the peak signal amplitude
+
+    static double max_signal_strength = 0.0;
+
 	signal_strength = 0.0;
 	for (i=0; i < MAX_BINS/2; i++){
-		double s = __real__ r->fft_time[i+(MAX_BINS/2)] * 1000.0;
+		double s = /* __real__ */ r->fft_time[i + (MAX_BINS/2)] * 1000.0;
 		if (signal_strength < s) 
 			signal_strength = s;
 	}
+
+    if (max_signal_strength > signal_strength) {
+        max_signal_strength = signal_strength;
+        printf("max_signal_strength: %8.2f\r\n", max_signal_strength);
+    }
 
 	// also calculate the moving average of the signal strength
 	r->signal_avg = (r->signal_avg * 0.93) + (signal_strength * 0.07);
@@ -484,13 +492,13 @@ static double agc2(struct rx *r){
 	if (agc_ramp != 0){
 		// printf("Ramping from %g ", r->agc_gain);
   		for (i = 0; i < MAX_BINS/2; i++){
-	  		__real__ (r->fft_time[i+(MAX_BINS/2)]) *= r->agc_gain;
+	  		/* __real__ */ (r->fft_time[i + (MAX_BINS/2)]) *= r->agc_gain;
 		}
 		r->agc_gain += agc_ramp;		
 		// printf("by %g to %g ", agc_ramp, r->agc_gain);
 	} else 
   		for (i = 0; i < MAX_BINS/2; i++)
-	  		__real__ (r->fft_time[i+(MAX_BINS/2)]) *= r->agc_gain;
+	  		/* __real__ */ (r->fft_time[i + (MAX_BINS/2)]) *= r->agc_gain;
 
 	// printf("\n");
 	r->agc_loop--;
@@ -583,15 +591,6 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	    fft_in_r[i] *= spectrum_window[i];
 
 	fftwf_execute(plan_spectrum_r);
-    // populate the extra elements
-    // out[i] is the conjugate of out[n-i]
-    // for (int i=0, j=MAX_BINS-i; i<MAX_BINS/2; i++, j--) {
-    //     __real__ fft_out[j] = __real__ fft_out[i];
-    //     __imag__ fft_out[j] = - __imag__ fft_out[i];
-
-    //     __real__ fft_spectrum[j] = __real__ fft_spectrum[i];
-    //     __imag__ fft_spectrum[j] = - __imag__ fft_spectrum[i];
-    // }
 
 	// the spectrum display is updated - not needed, called elsewhere
 	// spectrum_update();
@@ -613,10 +612,6 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
     for (int i=1, j=MAX_BINS-i; i<MAX_BINS/2; i++, j--) {
         __real__ r->fft_freq[i] += __real__ r->fft_freq[j];
         __imag__ r->fft_freq[i] -= __imag__ r->fft_freq[j];
-
-        __real__ fft_spectrum[j] = __real__ fft_spectrum[i];
-        __imag__ fft_spectrum[j] = - __imag__ fft_spectrum[i];
-
     }
 
 

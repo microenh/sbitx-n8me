@@ -294,7 +294,7 @@ static void draw_spectrum_init(struct field *f_spectrum, cairo_t *gfx){
 	// the center frequency is at the center of the lower sideband,
 	// i.e, three-fourth way up the bins.
 	// int starting_bin = (3 *MAX_BINS) / 4 - n_bins / 2;
-	starting_bin = (3 *MAX_BINS) / 4 - n_bins / 2 + fc_bin;
+	starting_bin = MAX_BINS / 4 - n_bins / 2 - fc_bin;
 	ending_bin = starting_bin + n_bins; 
 
 	x_step = (1.0 * f_spectrum->width ) / n_bins;
@@ -337,7 +337,7 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 
 	// start the plot
 	cairo_set_source_rgb(gfx, palette[SPECTRUM_PLOT][0], palette[SPECTRUM_PLOT][1], palette[SPECTRUM_PLOT][2]);
-	cairo_move_to(gfx, f_spectrum->x + f_spectrum->width, f_spectrum->y + grid_height);
+	cairo_move_to(gfx, f_spectrum->x, f_spectrum->y + grid_height);
 
 	float x = 0;
 	int j = 0;
@@ -356,11 +356,11 @@ void draw_spectrum(struct field *f_spectrum, cairo_t *gfx){
 		if (y > f_spectrum->height)
 			y = f_spectrum->height - 1;
 		// the plot should be increase upwards
-		cairo_line_to(gfx, f_spectrum->x + f_spectrum->width - (int)x, f_spectrum->y + grid_height - y);
+		cairo_line_to(gfx, f_spectrum->x + (int)x, f_spectrum->y + grid_height - y);
 
 		// fill the waterfall
 		for (int k = 0; k <= 1 + (int)x_step; k++)
-			wf[k + f_spectrum->width - (int)x] = (y * 100)/grid_height;
+			wf[k + (int)x] = (y * 100)/grid_height;
 		x += x_step;
 	}
 	cairo_stroke(gfx);
