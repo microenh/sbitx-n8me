@@ -405,7 +405,10 @@ struct rx *add_rx(int frequency, short mode, int bpf_low, int bpf_high){
 
 	//create fft complex arrays to convert the frequency back to time
     r->fft_freq = fftwf_alloc_complex(MAX_BINS);
+
     r->fft_time = fftwf_alloc_real(MAX_BINS);
+    // r->plan_fwd = fftwf_plan_dft_r2c_1d(MAX_BINS, fft_in_r, r->fft_freq, FFTW_MEASURE);
+
 	r->plan_rev = fftwf_plan_dft_c2r_1d(MAX_BINS, r->fft_freq, r->fft_time, FFTW_MEASURE);
 
 	r->output = 0;
@@ -445,22 +448,22 @@ static double agc2(struct rx *r){
 	// do nothing if agc is off
 	if (r->agc_speed == -1){
 		for (i=0; i < MAX_BINS/2; i++)
-			/* __real__ */ (r->fft_time[i + (MAX_BINS/2)]) *= 10000000.0;
+			(r->fft_time[i + (MAX_BINS/2)]) *= 10000000.0;
     	return 10000000.0;
 	}
 
 	// find the peak signal amplitude
 
-    static double max_signal_strength = 0.0;
+    static float max_signal_strength = 0.0;
 
 	signal_strength = 0.0;
 	for (i=0; i < MAX_BINS/2; i++){
-		double s = /* __real__ */ r->fft_time[i + (MAX_BINS/2)] * 1000.0;
+		float s = r->fft_time[i + (MAX_BINS/2)] * 1000.0;
 		if (signal_strength < s) 
 			signal_strength = s;
 	}
 
-    if (max_signal_strength > signal_strength) {
+    if (max_signal_strength < signal_strength) {
         max_signal_strength = signal_strength;
         printf("max_signal_strength: %8.2f\r\n", max_signal_strength);
     }
@@ -579,7 +582,9 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
         fft_in_r[i] = fft_m_r[j] = input_rx[j] * 5e-09;
 
 	//STEP 3: convert the time domain samples to  frequency domain
+	struct rx *r = rx_list;
 	fftwf_execute(plan_fwd_r);
+	// fftwf_execute(r->plan_fwd);
 
 	//STEP 3B: this is a side line, we use these frequency domain
 	// values to paint the spectrum in the user interface
@@ -592,6 +597,7 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	for (int i=0; i<MAX_BINS; i++)
 	    fft_in_r[i] *= spectrum_window[i];
 
+
 	fftwf_execute(plan_spectrum_r);
 
 	// the spectrum display is updated - not needed, called elsewhere
@@ -602,14 +608,18 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	// we may add another sub receiver within the pass band later,
 	// hence, the linked list of receivers here
 	// at present, we handle just the first receiver
-	struct rx *r = rx_list;
+	// struct rx *r = rx_list;
 	
 	//STEP 4: we rotate the bins around by r->tuned_bin and apply filter
-    for (int i=0, b=r->tuned_bin; b<MAX_BINS; i++, b++)
-        r->fft_freq[i] = fft_out[b] * r->filter->fir_coeff[i];    
+
+    // needed because reverse c2r DFT changes input (r->fft_freq)
+    memset(r->fft_freq, 0, sizeof(fftwf_complex) * MAX_BINS);
 
     for (int i=MAX_BINS-r->tuned_bin, b=0; i<MAX_BINS; i++, b++)
         r->fft_freq[i] = fft_out[b] * r->filter->fir_coeff[i];
+
+    for (int i=0, b=r->tuned_bin; b<MAX_BINS/2; i++, b++)
+        r->fft_freq[i] = fft_out[b] * r->filter->fir_coeff[i];    
 
     for (int i=1, j=MAX_BINS-i; i<MAX_BINS/2; i++, j--) {
         __real__ r->fft_freq[i] += __real__ r->fft_freq[j];
