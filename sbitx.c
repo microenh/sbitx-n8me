@@ -565,8 +565,10 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
 	int32_t *output_speaker, int32_t *output_tx, int n_samples)
 {
 	//STEP 1: first add the previous M samples to
-	for (int i=0; i<MAX_BINS/2; i++)
-        fft_in_r[i] = fft_m_r[i];
+    memcpy(fft_in_r, fft_m_r, (MAX_BINS/2) * sizeof(float));
+
+	// for (int i=0; i<MAX_BINS/2; i++)
+    //     fft_in_r[i] = fft_m_r[i];
 
 	//STEP 2: then add the new set of samples
 	// j is the index into incoming samples, starting at zero
