@@ -121,22 +121,26 @@ int filter_tune(struct filter *f, float const low, float const high, float const
     if (isnan(low) || isnan(high) || isnan(kaiser_beta))
         return -1;
 
-    assert(fabs(low) <= 0.5);
-    assert(fabs(high) <= 0.5);
+    float m_low = fabs(low);
+    float m_high = fabs(high);
+
+    assert(m_low <= 0.5);
+    assert(m_high <= 0.5);
+
+    if (m_low > m_high) {
+        float temp = m_low;
+        m_low = m_high;
+        m_high = temp;
+    }
 
     float gain = 1.0/((float)f->N);
 	// printf("# Gain is %lf\n", gain);
 	// printf("# filter elements %d\n", f->N);
 
     for(int n = 0; n < f->N; n++){
-        float s;
-		// the first half is +ve frequencies in frequency domain
-        if (n <= f->N/2)
-            s = (float)n / f->N;
-        else // the second half is -ve frequencies, inverted
-            s = (float)(n-f->N) / f->N;
+        float s = (float)(n) / f->N;
 
-        if (s >= low && s <= high)
+        if (s >= m_low && s <= m_high)
             f->fir_coeff[n] = gain;
         else
             f->fir_coeff[n] = 0;
@@ -145,12 +149,12 @@ int filter_tune(struct filter *f, float const low, float const high, float const
 
     window_filter(f, kaiser_beta);
 
-    // FILE *out;
-    // out = fopen("filter_data.csv","w");
-    // fprintf(out, "id,real,imag\r\n");
-    // for (int i=0; i<f->N; i++)
-    //     fprintf(out, "%d,%f,%f\r\n", i, __real__ f->fir_coeff[i], __imag__ f->fir_coeff[i]);
-    // fclose(out);
+    FILE *out;
+    out = fopen("filter_data.csv","w");
+    fprintf(out, "id,real,imag\r\n");
+    for (int i=0; i<f->N; i++)
+        fprintf(out, "%d,%f,%f\r\n", i, __real__ f->fir_coeff[i], __imag__ f->fir_coeff[i]);
+    fclose(out);
 
     return 0;
 }

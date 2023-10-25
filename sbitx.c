@@ -43,6 +43,9 @@ FILE *pf_debug = NULL;
 #define LPF_D 11
 
 
+
+
+
 #define SBITX_DE (0)
 #define SBITX_V2 (1)
 
@@ -124,6 +127,7 @@ struct power_settings band_power[] ={
 #define MDS_LEVEL (-135)
 
 struct Queue qremote;
+
 
 void radio_tune_to(uint32_t f){
 	if (rx_list->mode == MODE_CW)
@@ -454,8 +458,6 @@ static double agc2(struct rx *r){
 
 	// find the peak signal amplitude
 
-    static float max_signal_strength = 0.0;
-
 	signal_strength = 0.0;
 	for (i=0; i < MAX_BINS/2; i++){
 		float s = r->fft_time[i + (MAX_BINS/2)] * 1000.0;
@@ -463,10 +465,11 @@ static double agc2(struct rx *r){
 			signal_strength = s;
 	}
 
-    if (max_signal_strength < signal_strength) {
-        max_signal_strength = signal_strength;
-        printf("max_signal_strength: %8.2f\r\n", max_signal_strength);
-    }
+    // static float max_signal_strength = 0.0;
+    // if (max_signal_strength < signal_strength) {
+    //     max_signal_strength = signal_strength;
+    //     printf("max_signal_strength: %8.2f\r\n", max_signal_strength);
+    // }
 
 	// also calculate the moving average of the signal strength
 	r->signal_avg = (r->signal_avg * 0.93) + (signal_strength * 0.07);
@@ -621,10 +624,10 @@ void rx_process(int32_t *input_rx,  int32_t *input_mic,
     for (int i=0, b=r->tuned_bin; b<MAX_BINS/2; i++, b++)
         r->fft_freq[i] = fft_out[b] * r->filter->fir_coeff[i];    
 
-    for (int i=1, j=MAX_BINS-i; i<MAX_BINS/2; i++, j--) {
-        __real__ r->fft_freq[i] += __real__ r->fft_freq[j];
-        __imag__ r->fft_freq[i] -= __imag__ r->fft_freq[j];
-    }
+    // for (int i=1, j=MAX_BINS-i; i<MAX_BINS/2; i++, j--) {
+    //     __real__ r->fft_freq[i] += __real__ r->fft_freq[j];
+    //     __imag__ r->fft_freq[i] -= __imag__ r->fft_freq[j];
+    // }
 
 
     // STEP 5: zero out the other sideband - not needed, handled by filter
@@ -1271,6 +1274,7 @@ void sdr_request(char *request, char *response){
 		strcpy(response, "ok");	
 	} 
 	else if (!strcmp(cmd, "r1:mode")){
+        // printf ("set r1 mode %s\r\n", value);
 		if (!strcmp(value, "LSB"))
 			rx_list->mode = MODE_LSB;
 		else if (!strcmp(value, "CW"))
@@ -1287,6 +1291,13 @@ void sdr_request(char *request, char *response){
 			rx_list->mode = MODE_RTTY;
 		else
 			rx_list->mode = MODE_USB;
+
+
+
+        int new_bfo = (rx_list->mode == MODE_LSB || rx_list->mode == MODE_CWR)
+            ? LO_LSB : LO_USB;
+        si5351bx_setfreq(1, new_bfo);
+
 		
     	// set the tx mode to that of the rx1
     	tx_list->mode = rx_list->mode;

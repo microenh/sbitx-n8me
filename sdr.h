@@ -70,6 +70,10 @@ have continuos waveform.
 #define MAX_BINS 2048
 #define RX_SAMPLE_RATE 96000
 
+// high or low side for inversion for LSB
+#define LO_USB 40035000
+#define LO_LSB 39987000
+
 /*
 All the incoming samples are converted to frequency domain in sound_process(). 
 The fft_out stores these as frequency bins.

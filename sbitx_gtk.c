@@ -44,6 +44,7 @@ The initial sync between the gui values, the core radio values, settings, et al 
 #include "sdr_ui.h"
 #include "sdr.h"
 #include "sound.h"
+#include "si5351.h"
 
 
 /* command  buffer for commands received from the remote */
@@ -2148,8 +2149,9 @@ static void set_mode(char *mode){
 
 	if(!set_field(R1_MODE, umode)){
 		int new_bandwidth = 3000;
+        int m_id = mode_id(f->value);
 	
-		switch(mode_id(f->value)){
+		switch(m_id){
 			case MODE_CW:
 			case MODE_CWR:
 				new_bandwidth = atoi(get_field(_BW_CW)->value);
@@ -2166,6 +2168,9 @@ static void set_mode(char *mode){
 				break;
 		}
 		set_bandwidth(new_bandwidth);
+        int new_bfo = (m_id == MODE_LSB || m_id == MODE_CWR)
+            ? LO_LSB : LO_USB;
+        si5351bx_setfreq(1, new_bfo);
 	}
 	else
 		write_console(FONT_LOG, "%s is not a mode\n");
