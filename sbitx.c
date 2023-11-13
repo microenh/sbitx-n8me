@@ -396,7 +396,8 @@ struct rx *add_tx(int frequency, short mode, int bpf_low, int bpf_high){
     tx_list = r;
 }
 
-struct rx *add_rx(int frequency, short mode, int bpf_low, int bpf_high){
+// struct rx *add_rx(int frequency, short mode, int bpf_low, int bpf_high){
+static void add_rx(int frequency, short mode, int bpf_low, int bpf_high){
 
 	// we assume that there are <rate> samples / sec, giving us a 48khz slice
 	// the tuning can go up and down only by 22 KHz from the center_freq

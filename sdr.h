@@ -91,8 +91,6 @@ Each tx is also based on a struct rx but it is used to describe and hold state
 for the transmission. The data required is the same!
 */
 
-#include <complex.h>
-
 extern float fft_bins[];
 // extern int spectrum_plot[];
 extern fftwf_complex *fft_spectrum;

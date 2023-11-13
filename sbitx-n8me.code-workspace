@@ -13,6 +13,7 @@
         },
         "terminal.integrated.env.linux": {
             "DISPLAY": ":0"
-        }
+        },
+        "cmake.generator": "Ninja"
     }
 }
