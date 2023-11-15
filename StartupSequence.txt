@@ -1,0 +1,49 @@
+Startup Sequence
+
+sbitx_gtk.c: main()
+    sbitx_gtk.c: ui_init()
+    sbitx_gtk.c: hw_init()
+        wiringPiSetup() - library
+        sbitx_gtk.c: init_gpio_pins
+        sbitx_gtk.c: enc_init(ENC_A)    
+        sbitx_gtk.c: enc_init(ENC_B)
+        g_timeout_add(ui_tick) - library
+        wiringPiISR(ENC_A) - library
+        wirintPiISE(ENC_B) - library
+    sbitx_gtk.c: console_init()
+    queue.c: q_init(q_remote_commands)
+    queue.c: q_init(t_tx_text)
+    sbitx.c: setup()
+        sbitx.c: read_hw_ini()
+        sbitx.c: fft_init()
+        vfo.c: vfo_init_phase_table()
+        vfo.c: setup_oscillators()
+            delay(200)
+            si535bx_init()
+            delay(200)
+            si5351_setfreq(1, bfo_freq)
+        queue.c: q_init(qremote)
+        modems.c: modem_init()
+        sbitx.c: add_rx()
+        sbitx.c: add_tx()
+        rx_list->tuned_bin = 512
+        tx_list->tuned_bin = 512
+        sbitx.c: tx_init()
+        sbitx.c: setup_audio_codec()
+        sbitx_sound.c: sound_mixer()
+        sbitx_sound.c: sound_thread_start()
+        vfo.c: vfo_start()
+    panafall.c: init_waterfall()
+    sbitx_gtk.c: console_init()  ?? redundant ??
+    hamlib.c: hamlib_start()
+    remote.c: remote_start()
+    gtk_main() - library
+
+
+
+
+
+
+
+
+    
